@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Route Idle - Gen 1 to 8 Authentic Evolution Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      user-select: none;
+    }
+    .pixel-font {
+      font-family: 'Press Start 2P', cursive;
+    }
+    .pixelated {
+      image-rendering: pixelated;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .animate-float {
+      animation: float 2.4s ease-in-out infinite;
+    }
+    .shiny-glow {
+      filter: drop-shadow(0 0 12px #facc15) drop-shadow(0 0 24px #eab308);
+    }
+    .boss-glow {
+      filter: drop-shadow(0 0 14px #ef4444) drop-shadow(0 0 28px #b91c1c);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Starter Modal -->
+  <div id="starterModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-yellow-500 rounded-2xl max-w-2xl w-full p-6 text-center shadow-2xl">
+      <h2 class="pixel-font text-xl md:text-2xl text-yellow-400 mb-3">Welcome to Kanto!</h2>
+      <p class="text-slate-300 text-sm mb-6">Professor Oak: "Choose your very first partner! Catch base Pokémon in the wild and train them to evolve!"</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <button onclick="chooseStarter(1)" class="bg-emerald-950/60 hover:bg-emerald-900/80 border-2 border-emerald-500 rounded-xl p-4 transition transform hover:-translate-y-1 flex flex-col items-center">
+          <img data-sprite-id="1" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" class="w-24 h-24 pixelated" alt="Bulbasaur" />
+          <span class="font-bold text-emerald-300 mt-2">Bulbasaur</span>
+          <span class="text-xs text-slate-400 mt-1">Grass / Poison • Lv. 5</span>
+        </button>
+        <button onclick="chooseStarter(4)" class="bg-orange-950/60 hover:bg-orange-900/80 border-2 border-orange-500 rounded-xl p-4 transition transform hover:-translate-y-1 flex flex-col items-center">
+          <img data-sprite-id="4" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" class="w-24 h-24 pixelated" alt="Charmander" />
+          <span class="font-bold text-orange-300 mt-2">Charmander</span>
+          <span class="text-xs text-slate-400 mt-1">Fire • Lv. 5</span>
+        </button>
+        <button onclick="chooseStarter(7)" class="bg-sky-950/60 hover:bg-sky-900/80 border-2 border-sky-500 rounded-xl p-4 transition transform hover:-translate-y-1 flex flex-col items-center">
+          <img data-sprite-id="7" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" class="w-24 h-24 pixelated" alt="Squirtle" />
+          <span class="font-bold text-sky-300 mt-2">Squirtle</span>
+          <span class="text-xs text-slate-400 mt-1">Water • Lv. 5</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cloud Login & Save Code Modal (Google Sites Ready) -->
+  <div id="cloudModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-blue-500 rounded-2xl max-w-lg w-full p-6 text-center shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h2 class="pixel-font text-base md:text-lg text-blue-400 mb-2">☁️ Cloud Database & Save Sync</h2>
+      <p class="text-slate-300 text-xs mb-4">Log in to sync your save across devices on Google Sites!</p>
+
+      <div class="text-left mb-3 bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
+        <label class="block text-[11px] font-bold text-sky-400 mb-1">🔗 Firebase Realtime Database URL (Optional for Cross-Device):</label>
+        <input type="text" id="firebaseUrlInput" placeholder="https://your-project-default-rtdb.europe-west1.firebasedatabase.app" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500" />
+        <p class="text-[10px] text-slate-400 mt-1">Tip: Paste your Firebase URL here or set <code class="text-amber-300">DEFAULT_FIREBASE_URL</code> in the code.</p>
+      </div>
+
+      <input type="text" id="cloudUser" placeholder="Trainer Username" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white mb-2.5 focus:outline-none focus:border-blue-500" />
+      <input type="password" id="cloudPass" placeholder="Password" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white mb-3 focus:outline-none focus:border-blue-500" />
+
+      <div class="flex flex-wrap gap-2 mb-3">
+        <button onclick="cloudLogin()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 px-3 rounded-lg transition">🔑 Login / Register</button>
+        <button onclick="cloudSyncNow()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 px-3 rounded-lg transition">☁️ Save to Cloud</button>
+        <button onclick="cloudLoadNow()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2.5 px-3 rounded-lg transition">📥 Load Cloud</button>
+      </div>
+
+      <p id="cloudStatus" class="text-xs font-semibold text-amber-400 mb-4">Not logged in (Playing locally)</p>
+
+      <div class="border-t border-slate-800 pt-4 mt-2 text-left">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-bold text-emerald-400">📋 Direct Save-Code (Instant Backup / Transfer)</span>
+          <div class="flex gap-1.5">
+            <button onclick="exportSaveCode()" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-[11px] font-bold px-2.5 py-1 rounded">📤 Generate & Copy Code</button>
+            <button onclick="importSaveCode()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded">📥 Load Code</button>
+          </div>
+        </div>
+        <textarea id="saveCodeBox" rows="2" placeholder="Click 'Generate & Copy Code' or paste a Save-Code here and click 'Load Code'..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-[10px] font-mono text-slate-300 focus:outline-none focus:border-emerald-500"></textarea>
+      </div>
+
+      <button onclick="document.getElementById('cloudModal').classList.add('hidden')" class="mt-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-5 py-2 rounded-lg">Close Window</button>
+    </div>
+  </div>
+
+  <!-- PokéDex Modal (All 898 Pokémon with Region Filters & Search) -->
+  <div id="pokedexModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-yellow-500 rounded-2xl max-w-5xl w-full h-[88vh] flex flex-col p-6 shadow-2xl">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
+        <div>
+          <h2 class="pixel-font text-base text-yellow-400">📖 National PokéDex (#1 - #898)</h2>
+          <p id="pokedexStatsText" class="text-xs text-slate-400 mt-0.5">Registered Variants: 0</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="dexSearchInput" oninput="renderPokedex()" placeholder="Search name or #ID..." class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500" />
+          <button onclick="document.getElementById('pokedexModal').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg">Close [X]</button>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mb-3">
+        <button onclick="setDexGen(1)" id="dexTab-1" class="px-2.5 py-1 rounded text-xs font-bold bg-amber-500 text-slate-950">Gen 1 (1-151)</button>
+        <button onclick="setDexGen(2)" id="dexTab-2" class="px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300">Gen 2 (152-251)</button>
+        <button onclick="setDexGen(3)" id="dexTab-3" class="px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300">Gen 3 (252-386)</button>
+        <button onclick="setDexGen(4)" id="dexTab-4" class="px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300">Gen 4 (387-493)</button>
+        <button onclick="setDexGen(5)" id="dexTab-5" class="px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300">Gen 5 (494-649)</button>
+        <button onclick="setDexGen(6)" id="dexTab-6" class="px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300">Gen 6 (650-721)</button>
+        <button onclick="setDexGen(7)" id="dexTab-7" class="px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300">Gen 7 (722-809)</button>
+        <button onclick="setDexGen(8)" id="dexTab-8" class="px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300">Gen 8 (810-898)</button>
+      </div>
+      <div id="dexDetail" class="hidden mb-3 bg-slate-950/90 border border-yellow-500/40 rounded-xl p-3 max-h-[40%] overflow-y-auto"></div>
+      <div id="pokedexGrid" class="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 pr-1"></div>
+    </div>
+  </div>
+
+  <!-- PC Box Modal -->
+  <div id="pcModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex items-center justify-center p-4" onclick="if (event.target === this) closePc()">
+    <div id="pcModalPanel" onmouseenter="pcPointerInside = true" onmouseleave="pcPointerInside = false; if (pcNeedsRefresh) renderPc()"
+      class="bg-slate-900 border-2 border-sky-500 rounded-2xl max-w-5xl w-full h-[90vh] flex flex-col p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+        <div>
+          <h2 class="pixel-font text-base text-sky-400">💻 PC Box</h2>
+          <p id="pcModalStats" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+        <button onclick="closePc()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg">Close [X]</button>
+      </div>
+
+      <div class="flex items-center justify-between mb-1.5">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">⚡ Active Party (<span id="pcPartyCount">0</span>/6)</h3>
+        <span class="text-[11px] text-slate-400">Click a PC Pokémon to add it to your party</span>
+      </div>
+      <div id="pcSwapBanner" class="hidden mb-2 bg-amber-950/60 border border-amber-500/60 text-amber-200 text-xs rounded-lg px-3 py-2 flex items-center justify-between gap-2"></div>
+      <div id="pcParty" class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4"></div>
+
+      <div class="flex flex-wrap items-center gap-1.5 mb-3">
+        <span class="text-[11px] font-bold text-slate-400 mr-1">Sort:</span>
+        <button onclick="setPcSort('dps')" id="pcSort-dps" class="px-2.5 py-1 rounded text-xs font-bold">⚔️ DPS</button>
+        <button onclick="setPcSort('dex')" id="pcSort-dex" class="px-2.5 py-1 rounded text-xs font-bold"># Dex</button>
+        <button onclick="setPcSort('level')" id="pcSort-level" class="px-2.5 py-1 rounded text-xs font-bold">Lv. Level</button>
+        <button onclick="setPcSort('newest')" id="pcSort-newest" class="px-2.5 py-1 rounded text-xs font-bold">🕒 Newest</button>
+        <span class="w-px h-5 bg-slate-700 mx-1"></span>
+        <button onclick="togglePcFilter('shinyOnly')" id="pcFilter-shinyOnly" class="px-2.5 py-1 rounded text-xs font-bold">✨ Shiny only</button>
+        <button onclick="togglePcFilter('favOnly')" id="pcFilter-favOnly" class="px-2.5 py-1 rounded text-xs font-bold">★ Favorites only</button>
+        <input type="text" id="pcSearchInput" oninput="renderPc()" placeholder="Search name..." class="ml-auto bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 w-36" />
+      </div>
+      <div id="pcGrid" class="flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-2 pr-1 content-start"></div>
+    </div>
+  </div>
+
+  <!-- Top Header -->
+  <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-b from-red-500 via-slate-900 to-white border-2 border-slate-200 flex items-center justify-center">
+          <div class="w-2.5 h-2.5 rounded-full bg-white border border-slate-900"></div>
+        </div>
+        <div>
+          <h1 class="pixel-font text-xs md:text-sm text-yellow-400 tracking-wide">POKÉMON ROUTE IDLE</h1>
+          <p id="levelCapBanner" class="text-xs text-amber-300 font-semibold mt-0.5">🔒 Level Cap: Lv. 12 (Brock)</p>
+        </div>
+      </div>
+
+      <!-- Region Tabs -->
+      <div class="flex items-center gap-1.5 bg-slate-950 p-1 rounded-lg border border-slate-800 overflow-x-auto">
+        <button id="tab-kanto" onclick="switchRegion('kanto')" class="px-2.5 py-1.5 rounded-md text-xs font-bold bg-red-600 text-white transition">Kanto</button>
+        <button id="tab-johto" onclick="switchRegion('johto')" class="px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">🔒 Johto</button>
+        <button id="tab-hoenn" onclick="switchRegion('hoenn')" class="px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">🔒 Hoenn</button>
+        <button id="tab-sinnoh" onclick="switchRegion('sinnoh')" class="px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">🔒 Sinnoh</button>
+        <button id="tab-unova" onclick="switchRegion('unova')" class="px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">🔒 Unova</button>
+        <button id="tab-kalos" onclick="switchRegion('kalos')" class="px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">🔒 Kalos</button>
+        <button id="tab-alola" onclick="switchRegion('alola')" class="px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">🔒 Alola</button>
+        <button id="tab-galar" onclick="switchRegion('galar')" class="px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition">🔒 Galar</button>
+      </div>
+
+      <!-- Stats & Cloud / Dex Buttons -->
+      <div class="flex flex-wrap items-center gap-2.5 text-xs">
+        <button onclick="document.getElementById('cloudModal').classList.remove('hidden')" class="bg-blue-950 hover:bg-blue-900 border border-blue-700 text-blue-300 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+          <span>☁️</span> <span id="topCloudBtnText">Cloud Save</span>
+        </button>
+        <button onclick="openPokedex()" class="bg-yellow-950 hover:bg-yellow-900 border border-yellow-700 text-yellow-300 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+          <span>📖</span> PokéDex (898)
+        </button>
+        <div class="bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+          <span class="text-yellow-400 font-bold">₽</span>
+          <span id="pokedollarsDisplay" class="font-bold">150</span>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span title="Team DPS">⚔️ <strong id="dpsDisplay" class="text-emerald-400">0</strong>/s</span>
+          <span class="text-slate-600">|</span>
+          <span title="Badge Bonus">🏅 <strong id="badgeBonusDisplay" class="text-purple-400">+0%</strong></span>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5" title="Shiny Odds">
+          <span>✨</span>
+          <span id="shinyOddsDisplay" class="text-yellow-300 font-semibold">1 / 8,192</span>
+        </div>
+        <button onclick="goFullscreen()" title="Play fullscreen" class="text-xs font-bold text-sky-300 hover:text-sky-200 bg-sky-950/60 border border-sky-700 px-2.5 py-1.5 rounded-lg">⛶ Fullscreen</button>
+        <button onclick="resetSave()" class="text-xs text-red-400 hover:text-red-300 bg-red-950/40 border border-red-800/60 px-2.5 py-1.5 rounded-lg">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <main class="max-w-7xl w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4">
+
+    <!-- Left Column: All Individual Routes, Dungeons, Gyms & Leagues -->
+    <section class="lg:col-span-4 flex flex-col gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col h-[540px]">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-bold text-sm uppercase tracking-wider text-slate-300">🗺️ All Routes & Areas (<span id="regionTitle">Kanto</span>)</h2>
+          <span id="badgeCountDisplay" class="text-xs bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 px-2 py-0.5 rounded-full font-semibold">0 Badges</span>
+        </div>
+        <div id="areaList" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+      </div>
+
+      <!-- Badges & Trophies Overview -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400">🏅 <span id="badgeRegionTitle">Kanto</span> Badges</h3>
+          <span id="badgeRegionCount" class="text-[11px] font-semibold text-yellow-300"></span>
+        </div>
+        <div id="badgeContainer" class="grid grid-cols-5 gap-x-1 gap-y-2 pr-1"></div>
+      </div>
+    </section>
+
+    <!-- Center Column: Battle Arena & PokéMart -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+      <!-- Arena Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
+        <!-- Area Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="areaTypeBadge" class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-600 text-white">ROUTE</span>
+              <h2 id="currentAreaName" class="font-extrabold text-base md:text-lg text-white">Route 1</h2>
+            </div>
+            <p id="areaSubInfo" class="text-xs text-slate-400 mt-0.5">Defeat 10 Pokémon to unlock next area</p>
+          </div>
+          <label class="flex items-center gap-1.5 text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700 cursor-pointer">
+            <input type="checkbox" id="autoCatchToggle" onchange="toggleAutoCatch()" class="accent-red-500">
+            <span>Auto-Catch (New/Shiny)</span>
+          </label>
+        </div>
+
+        <!-- Dungeon / Gym Multi-Wave Bar -->
+        <div id="dungeonWaveBox" class="hidden mt-3 bg-slate-950/90 border border-amber-500/40 rounded-lg p-3">
+          <div class="flex items-center justify-between text-xs mb-1.5">
+            <span id="waveTitleText" class="font-bold text-amber-300">Wave 1 / 5</span>
+            <div class="flex items-center gap-2">
+              <span id="timerText" class="font-mono font-bold text-red-400">45.0s</span>
+              <button onclick="restartDungeon()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-0.5 rounded border border-slate-600">↻ Restart Wave 1</button>
+            </div>
+          </div>
+          <div id="waveDots" class="flex items-center gap-1.5 mb-2"></div>
+          <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div id="timerBar" class="h-full bg-gradient-to-r from-amber-500 to-red-500 transition-all duration-100" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <!-- Route Progress Bar -->
+        <div id="routeProgressBox" class="mt-3 bg-slate-950/70 border border-slate-800 rounded-lg p-2.5">
+          <div class="flex justify-between text-xs text-slate-300 mb-1">
+            <span>Route Progress</span>
+            <span id="routeKillsText" class="font-bold text-emerald-400">0 / 10</span>
+          </div>
+          <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div id="routeProgressBar" class="h-full bg-emerald-500 transition-all duration-200" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Enemy Display (100% Pure Idle) -->
+        <div class="my-4 py-5 bg-gradient-to-b from-slate-800/60 to-slate-950/80 border border-slate-800 rounded-xl flex flex-col items-center justify-center relative select-none">
+          <!-- Rare Encounter / Boss Tag -->
+          <div id="enemyRoleTag" class="hidden mb-1.5 text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300">⭐ Rare Starter (6%)</div>
+          
+          <div class="flex items-center gap-2">
+            <h3 id="enemyName" class="text-lg font-extrabold text-white">Pidgey</h3>
+            <span id="enemyLevel" class="text-xs font-bold px-2 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700">Lv. 3</span>
+            <span id="caughtIndicator" class="text-xs font-bold px-2 py-0.5 rounded bg-slate-900 border border-slate-700" title="PokéDex Status"></span>
+          </div>
+
+          <div class="relative my-3 h-32 flex items-center justify-center">
+            <img id="enemySprite" data-sprite-id="16" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png" class="w-28 h-28 pixelated animate-float" alt="Enemy" />
+          </div>
+
+          <!-- HP Bar -->
+          <div class="w-4/5 max-w-xs">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-400 font-semibold">HP</span>
+              <span id="enemyHpText" class="font-mono font-bold text-slate-200">20 / 20</span>
+            </div>
+            <div class="w-full h-3.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+              <div id="enemyHpBar" class="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-100" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <!-- Area Spawns Tracker (Shows Base Spawns + ⭐ Starters + 🪨 Fossils + 🔮 Mythicals) -->
+          <div id="areaSpawnsPreview" class="mt-3 flex flex-wrap items-center justify-center gap-1.5 px-3"></div>
+          <p class="text-[11px] text-slate-400 mt-2">⚔️ Your Active Party attacks automatically every second</p>
+        </div>
+
+        <!-- Catch Controls -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span class="text-xs font-bold text-slate-300">🔴 Select Ball & Catch:</span>
+            <button id="throwBallBtn" onclick="attemptCatch(false)" class="bg-red-600 hover:bg-red-500 disabled:bg-slate-800 disabled:text-slate-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg transition shadow">
+              Throw Poké Ball!
+            </button>
+          </div>
+          <div class="grid grid-cols-4 gap-2 text-xs">
+            <button onclick="selectBall('pokeball')" id="ballBtn-pokeball" class="p-2 rounded-lg border border-red-500 bg-slate-800/90 flex flex-col items-center">
+              <span class="font-bold text-red-400">Poké Ball</span>
+              <span class="text-[10px] text-slate-400">1x • <strong id="count-pokeball">10</strong></span>
+            </button>
+            <button onclick="selectBall('greatball')" id="ballBtn-greatball" class="p-2 rounded-lg border border-slate-700 bg-slate-900 flex flex-col items-center">
+              <span class="font-bold text-sky-400">Great Ball</span>
+              <span class="text-[10px] text-slate-400">1.5x • <strong id="count-greatball">2</strong></span>
+            </button>
+            <button onclick="selectBall('ultraball')" id="ballBtn-ultraball" class="p-2 rounded-lg border border-slate-700 bg-slate-900 flex flex-col items-center">
+              <span class="font-bold text-yellow-400">Ultra Ball</span>
+              <span class="text-[10px] text-slate-400">2x • <strong id="count-ultraball">0</strong></span>
+            </button>
+            <button onclick="selectBall('masterball')" id="ballBtn-masterball" class="p-2 rounded-lg border border-slate-700 bg-slate-900 flex flex-col items-center">
+              <span class="font-bold text-purple-400">Master Ball</span>
+              <span class="text-[10px] text-slate-400">100% • <strong id="count-masterball">0</strong></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PokéMart & Log -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-sm uppercase tracking-wider text-slate-300">🛒 PokéMart & Upgrades</h3>
+          <span class="text-[11px] text-slate-400">Base Shiny Odds: 1 / 8,192</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
+          <button onclick="buyBall('pokeball', 50)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
+            <div class="font-bold text-red-400">+1 Poké Ball</div>
+            <div class="text-yellow-400 font-semibold">₽ 50</div>
+          </button>
+          <button onclick="buyBall('greatball', 200)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
+            <div class="font-bold text-sky-400">+1 Great Ball</div>
+            <div class="text-yellow-400 font-semibold">₽ 200</div>
+          </button>
+          <button onclick="buyBall('ultraball', 600)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
+            <div class="font-bold text-yellow-400">+1 Ultra Ball</div>
+            <div class="text-yellow-400 font-semibold">₽ 600</div>
+          </button>
+          <button onclick="buyBall('masterball', 75000)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
+            <div class="font-bold text-purple-400">+1 Master Ball</div>
+            <div class="text-yellow-400 font-semibold">₽ 75,000</div>
+          </button>
+          <button id="buyShinyCharmBtn" onclick="buyShinyCharm()" class="bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/60 rounded-lg p-2 text-center col-span-2">
+            <div id="shinyCharmTitle" class="font-bold text-amber-300">✨ Shiny Charm I</div>
+            <div id="shinyCharmCost" class="text-yellow-400 font-semibold">₽ 100,000 (1/4096)</div>
+          </button>
+          <button onclick="buyUpgrade('powerTonic')" class="bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/60 rounded-lg p-2 text-center">
+            <div id="tonicTitleText" class="font-bold text-emerald-300">💪 Power Tonic (Lv. 0)</div>
+            <div id="tonicCostText" class="text-yellow-400 font-semibold">₽ 100</div>
+          </button>
+          <button onclick="buyUpgrade('expShare')" class="bg-sky-950/60 hover:bg-sky-900/70 border border-sky-500/60 rounded-lg p-2 text-center">
+            <div id="expTitleText" class="font-bold text-sky-300">📘 Exp. Share+ (Lv. 0)</div>
+            <div id="expCostText" class="text-yellow-400 font-semibold">₽ 150</div>
+          </button>
+        </div>
+
+        <!-- Battle Log -->
+        <div id="battleLog" class="bg-slate-950 border border-slate-800 rounded-lg p-2.5 h-24 overflow-y-auto text-xs space-y-1 font-mono text-slate-300"></div>
+      </div>
+    </section>
+
+    <!-- Right Column: Active Team & PC Box -->
+    <section class="lg:col-span-3 flex flex-col gap-4">
+      <!-- Active Team -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="font-bold text-sm uppercase tracking-wider text-slate-300">⚡ Active Party (<span id="teamCount">0</span>/6)</h2>
+          <span id="teamCapIndicator" class="text-[11px] text-amber-400 font-bold">Cap: Lv. 12</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-3">Drag & drop to reorder or swap with PC Box!</p>
+        <div id="teamList" class="space-y-2" ondragover="allowDrop(event)" ondrop="dropOnTeam(event)"></div>
+      </div>
+
+      <!-- PC Storage Box -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-bold text-sm uppercase tracking-wider text-slate-300">💻 PC Box (<span id="pcCount">0</span>)</h2>
+          <span id="pcFavCount" class="text-[11px] text-amber-300"></span>
+        </div>
+        <div id="pcPreview" class="flex flex-wrap gap-1 mb-3 min-h-[2.5rem]"></div>
+        <button onclick="openPc()" class="w-full bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold py-2 rounded-lg transition">Open PC &amp; Manage Party</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ===================== 00. FULLSCREEN (handig op Google Sites, waar het spel in een klein vak staat) =====================
+    // Kopie van de pagina zoals hij geladen werd, om hem desnoods in een nieuw tabblad te openen
+    const GAME_SOURCE = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+
+    function goFullscreen() {
+      if (document.fullscreenElement) { document.exitFullscreen(); return; }
+      const el = document.documentElement;
+      if (document.fullscreenEnabled && el.requestFullscreen) {
+        el.requestFullscreen().catch(openGameInNewTab);
+      } else {
+        openGameInNewTab(); // Google Sites staat echt fullscreen soms niet toe → nieuw tabblad
+      }
+    }
+
+    function openGameInNewTab() {
+      try { saveGame(); } catch (e) {}
+      // Geef de huidige save mee: een nieuw tabblad deelt de opslag van het ingesloten venster niet altijd
+      const saveJson = JSON.stringify(JSON.stringify(state)).replace(/</g, "\\u003c");
+      const source = GAME_SOURCE.replace("<head>", `<head><script>window.__INITIAL_SAVE__ = ${saveJson};<\/script>`);
+      const url = URL.createObjectURL(new Blob([source], { type: "text/html" }));
+      const win = window.open(url, "_blank");
+      if (!win) {
+        alert("Fullscreen is blocked here. Allow pop-ups for this site, or open the game page directly to play on the full screen.");
+      }
+    }
+
+    // ===================== 0. SPRITES (eigen map met GitHub als reserve) =====================
+    // Zet je sprites in een map naast dit HTML-bestand. Standaard: sprites/25.png en sprites/shiny/25.png
+    // (dezelfde indeling als PokeAPI/sprites/sprites/pokemon). Andere indeling? Pas de paden hieronder aan.
+    const SPRITE_CONFIG = {
+      // "auto"   = eigen map als die er is, anders GitHub (op Google Sites altijd GitHub)
+      // "github" = altijd GitHub, nooit naar een eigen map kijken
+      // "local"  = altijd de eigen map (met GitHub als reserve per plaatje)
+      mode: "auto",
+      localNormal: "sprites/{id}.png",
+      localShiny: "sprites/shiny/{id}.png",
+      remoteNormal: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{id}.png",
+      remoteShiny: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/{id}.png"
+    };
+    // Pas als de test hieronder slaagt, gebruiken we de eigen map. Zo krijg je geen dubbele
+    // (mislukte) verzoeken als de map er niet is, bijvoorbeeld op Google Sites.
+    let useLocalSprites = false;
+
+    function spriteSrc(id, shiny) {
+      const tpl = useLocalSprites
+        ? (shiny ? SPRITE_CONFIG.localShiny : SPRITE_CONFIG.localNormal)
+        : (shiny ? SPRITE_CONFIG.remoteShiny : SPRITE_CONFIG.remoteNormal);
+      return tpl.replace("{id}", id);
+    }
+
+    // Reserve per plaatje: ontbreekt een sprite in je eigen map → GitHub; ontbreekt hij daar ook → placeholder
+    const SPRITE_PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="#1e293b" stroke="#475569" stroke-width="2"/><text x="16" y="21" font-size="14" text-anchor="middle" fill="#94a3b8" font-family="sans-serif">?</text></svg>');
+    function localToRemote(src) {
+      for (const [loc, rem] of [[SPRITE_CONFIG.localShiny, SPRITE_CONFIG.remoteShiny], [SPRITE_CONFIG.localNormal, SPRITE_CONFIG.remoteNormal]]) {
+        const re = new RegExp(loc.replace(/[.*+?^$()|[\]\\]/g, "\\$&").replace("{id}", "(\\d+)") + "$");
+        const m = src.match(re);
+        if (m) return rem.replace("{id}", m[1]);
+      }
+      return null;
+    }
+    document.addEventListener("error", (ev) => {
+      const img = ev.target;
+      if (!img || img.tagName !== "IMG") return;
+      const src = img.getAttribute("src") || "";
+      if (src.startsWith("data:")) return;
+      const remote = localToRemote(src);
+      img.src = remote && remote !== src ? remote : SPRITE_PLACEHOLDER;
+    }, true);
+
+    (function detectLocalSprites() {
+      if (SPRITE_CONFIG.mode === "github") return;
+      // Google Sites draait ingesloten code op een Google-domein; daar is nooit een eigen map → direct GitHub
+      const host = location.hostname || "";
+      const onGoogleSites = /(^|\.)(googleusercontent\.com|google\.com)$/.test(host);
+      if (SPRITE_CONFIG.mode === "auto" && onGoogleSites) return;
+      if (SPRITE_CONFIG.mode === "local") useLocalSprites = true;
+      const probe = new Image();
+      probe.onload = () => {
+        useLocalSprites = true;
+        console.log("Using local sprite folder.");
+        document.querySelectorAll("img[data-sprite-id]").forEach(img => { img.src = spriteSrc(img.dataset.spriteId, false); });
+        if (typeof updateAllUI === "function" && state.starterChosen) updateAllUI();
+      };
+      probe.src = SPRITE_CONFIG.localNormal.replace("{id}", 1);
+    })();
+
+    // ===================== 1. POKÉMON DATABASE (#1 - #898) =====================
+    const POKEMON_DB = {
+      1: { name: "Bulbasaur", lineId: 1, baseDps: 8, evolveLevel: 16, evolveTo: 2 },
+      2: { name: "Ivysaur", lineId: 1, baseDps: 18, evolveLevel: 32, evolveTo: 3 },
+      3: { name: "Venusaur", lineId: 1, baseDps: 42 },
+      4: { name: "Charmander", lineId: 2, baseDps: 9, evolveLevel: 16, evolveTo: 5 },
+      5: { name: "Charmeleon", lineId: 2, baseDps: 19, evolveLevel: 36, evolveTo: 6 },
+      6: { name: "Charizard", lineId: 2, baseDps: 45 },
+      7: { name: "Squirtle", lineId: 3, baseDps: 8, evolveLevel: 16, evolveTo: 8 },
+      8: { name: "Wartortle", lineId: 3, baseDps: 18, evolveLevel: 36, evolveTo: 9 },
+      9: { name: "Blastoise", lineId: 3, baseDps: 43 },
+      10: { name: "Caterpie", lineId: 4, baseDps: 5, evolveLevel: 7, evolveTo: 11 },
+      11: { name: "Metapod", lineId: 4, baseDps: 8, evolveLevel: 10, evolveTo: 12 },
+      12: { name: "Butterfree", lineId: 4, baseDps: 20 },
+      13: { name: "Weedle", lineId: 210, baseDps: 5, evolveLevel: 7, evolveTo: 14 },
+      14: { name: "Kakuna", lineId: 210, baseDps: 8, evolveLevel: 10, evolveTo: 15 },
+      15: { name: "Beedrill", lineId: 210, baseDps: 20 },
+      16: { name: "Pidgey", lineId: 5, baseDps: 6, evolveLevel: 18, evolveTo: 17 },
+      17: { name: "Pidgeotto", lineId: 5, baseDps: 15, evolveLevel: 36, evolveTo: 18 },
+      18: { name: "Pidgeot", lineId: 5, baseDps: 36 },
+      19: { name: "Rattata", lineId: 6, baseDps: 6, evolveLevel: 20, evolveTo: 20 },
+      20: { name: "Raticate", lineId: 6, baseDps: 18 },
+      21: { name: "Spearow", lineId: 211, baseDps: 7, evolveLevel: 20, evolveTo: 22 },
+      22: { name: "Fearow", lineId: 211, baseDps: 22 },
+      23: { name: "Ekans", lineId: 212, baseDps: 8, evolveLevel: 22, evolveTo: 24 },
+      24: { name: "Arbok", lineId: 212, baseDps: 23 },
+      25: { name: "Pikachu", lineId: 7, baseDps: 14, evolveLevel: 26, evolveTo: 26 },
+      26: { name: "Raichu", lineId: 7, baseDps: 34 },
+      27: { name: "Sandshrew", lineId: 213, baseDps: 9, evolveLevel: 22, evolveTo: 28 },
+      28: { name: "Sandslash", lineId: 213, baseDps: 24 },
+      29: { name: "Nidoran♀", lineId: 214, baseDps: 8, evolveLevel: 16, evolveTo: 30 },
+      30: { name: "Nidorina", lineId: 214, baseDps: 18, evolveLevel: 32, evolveTo: 31 },
+      31: { name: "Nidoqueen", lineId: 214, baseDps: 38 },
+      32: { name: "Nidoran♂", lineId: 215, baseDps: 8, evolveLevel: 16, evolveTo: 33 },
+      33: { name: "Nidorino", lineId: 215, baseDps: 18, evolveLevel: 32, evolveTo: 34 },
+      34: { name: "Nidoking", lineId: 215, baseDps: 39 },
+      35: { name: "Clefairy", lineId: 8, baseDps: 14, evolveLevel: 28, evolveTo: 36 },
+      36: { name: "Clefable", lineId: 8, baseDps: 32 },
+      37: { name: "Vulpix", lineId: 216, baseDps: 11, evolveLevel: 28, evolveTo: 38 },
+      38: { name: "Ninetales", lineId: 216, baseDps: 34 },
+      39: { name: "Jigglypuff", lineId: 217, baseDps: 10, evolveLevel: 26, evolveTo: 40 },
+      40: { name: "Wigglytuff", lineId: 217, baseDps: 28 },
+      41: { name: "Zubat", lineId: 9, baseDps: 7, evolveLevel: 22, evolveTo: 42 },
+      42: { name: "Golbat", lineId: 9, baseDps: 21, evolveLevel: 44, evolveTo: 169 },
+      43: { name: "Oddish", lineId: 10, baseDps: 9, evolveLevel: 21, evolveTo: 44 },
+      44: { name: "Gloom", lineId: 10, baseDps: 19, evolveLevel: 32, evolveTo: 45 },
+      45: { name: "Vileplume", lineId: 10, baseDps: 36 },
+      50: { name: "Diglett", lineId: 101, baseDps: 10, evolveLevel: 26, evolveTo: 51 },
+      51: { name: "Dugtrio", lineId: 101, baseDps: 28 },
+      58: { name: "Growlithe", lineId: 11, baseDps: 16, evolveLevel: 34, evolveTo: 59 },
+      59: { name: "Arcanine", lineId: 11, baseDps: 44 },
+      60: { name: "Poliwag", lineId: 102, baseDps: 10, evolveLevel: 25, evolveTo: 61 },
+      61: { name: "Poliwhirl", lineId: 102, baseDps: 21, evolveLevel: 36, evolveTo: 62 },
+      62: { name: "Poliwrath", lineId: 102, baseDps: 40 },
+      63: { name: "Abra", lineId: 12, baseDps: 12, evolveLevel: 16, evolveTo: 64 },
+      64: { name: "Kadabra", lineId: 12, baseDps: 25, evolveLevel: 38, evolveTo: 65 },
+      65: { name: "Alakazam", lineId: 12, baseDps: 46 },
+      66: { name: "Machop", lineId: 13, baseDps: 11, evolveLevel: 28, evolveTo: 67 },
+      67: { name: "Machoke", lineId: 13, baseDps: 23, evolveLevel: 40, evolveTo: 68 },
+      68: { name: "Machamp", lineId: 13, baseDps: 44 },
+      69: { name: "Bellsprout", lineId: 218, baseDps: 10, evolveLevel: 21, evolveTo: 70 },
+      70: { name: "Weepinbell", lineId: 218, baseDps: 20, evolveLevel: 34, evolveTo: 71 },
+      71: { name: "Victreebel", lineId: 218, baseDps: 37 },
+      72: { name: "Tentacool", lineId: 103, baseDps: 12, evolveLevel: 30, evolveTo: 73 },
+      73: { name: "Tentacruel", lineId: 103, baseDps: 34 },
+      74: { name: "Geodude", lineId: 14, baseDps: 10, evolveLevel: 25, evolveTo: 75 },
+      75: { name: "Graveler", lineId: 14, baseDps: 22, evolveLevel: 40, evolveTo: 76 },
+      76: { name: "Golem", lineId: 14, baseDps: 41 },
+      81: { name: "Magnemite", lineId: 104, baseDps: 13, evolveLevel: 30, evolveTo: 82 },
+      82: { name: "Magneton", lineId: 104, baseDps: 33 },
+      92: { name: "Gastly", lineId: 15, baseDps: 13, evolveLevel: 25, evolveTo: 93 },
+      93: { name: "Haunter", lineId: 15, baseDps: 26, evolveLevel: 42, evolveTo: 94 },
+      94: { name: "Gengar", lineId: 15, baseDps: 47 },
+      95: { name: "Onix", lineId: 16, baseDps: 22, evolveLevel: 45, evolveTo: 208 },
+      109: { name: "Koffing", lineId: 18, baseDps: 14, evolveLevel: 35, evolveTo: 110 },
+      110: { name: "Weezing", lineId: 18, baseDps: 33 },
+      111: { name: "Rhyhorn", lineId: 19, baseDps: 17, evolveLevel: 42, evolveTo: 112 },
+      112: { name: "Rhydon", lineId: 19, baseDps: 43 },
+      120: { name: "Staryu", lineId: 20, baseDps: 13, evolveLevel: 24, evolveTo: 121 },
+      121: { name: "Starmie", lineId: 20, baseDps: 34 },
+      125: { name: "Electabuzz", lineId: 55, baseDps: 38, evolveLevel: 50, evolveTo: 466 },
+      129: { name: "Magikarp", lineId: 105, baseDps: 5, evolveLevel: 20, evolveTo: 130 },
+      130: { name: "Gyarados", lineId: 105, baseDps: 48 },
+      131: { name: "Lapras", lineId: 106, baseDps: 45 },
+      138: { name: "Omanyte", lineId: 107, baseDps: 18, evolveLevel: 40, evolveTo: 139 },
+      139: { name: "Omastar", lineId: 107, baseDps: 42 },
+      140: { name: "Kabuto", lineId: 108, baseDps: 18, evolveLevel: 40, evolveTo: 141 },
+      141: { name: "Kabutops", lineId: 108, baseDps: 43 },
+      142: { name: "Aerodactyl", lineId: 109, baseDps: 48 },
+      143: { name: "Snorlax", lineId: 110, baseDps: 46 },
+      144: { name: "Articuno", lineId: 21, baseDps: 62 },
+      145: { name: "Zapdos", lineId: 22, baseDps: 64 },
+      146: { name: "Moltres", lineId: 23, baseDps: 64 },
+      147: { name: "Dratini", lineId: 24, baseDps: 16, evolveLevel: 30, evolveTo: 148 },
+      148: { name: "Dragonair", lineId: 24, baseDps: 30, evolveLevel: 55, evolveTo: 149 },
+      149: { name: "Dragonite", lineId: 24, baseDps: 68 },
+      150: { name: "Mewtwo", lineId: 25, baseDps: 85 },
+      151: { name: "Mew", lineId: 26, baseDps: 80 },
+
+      // Gen 2 Johto
+      152: { name: "Chikorita", lineId: 27, baseDps: 14, evolveLevel: 16, evolveTo: 153 },
+      153: { name: "Bayleef", lineId: 27, baseDps: 26, evolveLevel: 32, evolveTo: 154 },
+      154: { name: "Meganium", lineId: 27, baseDps: 48 },
+      155: { name: "Cyndaquil", lineId: 28, baseDps: 15, evolveLevel: 14, evolveTo: 156 },
+      156: { name: "Quilava", lineId: 28, baseDps: 27, evolveLevel: 36, evolveTo: 157 },
+      157: { name: "Typhlosion", lineId: 28, baseDps: 50 },
+      158: { name: "Totodile", lineId: 29, baseDps: 15, evolveLevel: 18, evolveTo: 159 },
+      159: { name: "Croconaw", lineId: 29, baseDps: 27, evolveLevel: 30, evolveTo: 160 },
+      160: { name: "Feraligatr", lineId: 29, baseDps: 49 },
+      169: { name: "Crobat", lineId: 9, baseDps: 46 },
+      178: { name: "Xatu", lineId: 111, baseDps: 40 },
+      179: { name: "Mareep", lineId: 30, baseDps: 15, evolveLevel: 15, evolveTo: 180 },
+      180: { name: "Flaaffy", lineId: 30, baseDps: 26, evolveLevel: 30, evolveTo: 181 },
+      181: { name: "Ampharos", lineId: 30, baseDps: 48 },
+      194: { name: "Wooper", lineId: 112, baseDps: 13, evolveLevel: 20, evolveTo: 195 },
+      195: { name: "Quagsire", lineId: 112, baseDps: 36 },
+      197: { name: "Umbreon", lineId: 113, baseDps: 46 },
+      208: { name: "Steelix", lineId: 16, baseDps: 52 },
+      212: { name: "Scizor", lineId: 32, baseDps: 54 },
+      214: { name: "Heracross", lineId: 114, baseDps: 50 },
+      218: { name: "Slugma", lineId: 115, baseDps: 15, evolveLevel: 38, evolveTo: 219 },
+      219: { name: "Magcargo", lineId: 115, baseDps: 36 },
+      220: { name: "Swinub", lineId: 56, baseDps: 15, evolveLevel: 33, evolveTo: 221 },
+      221: { name: "Piloswine", lineId: 56, baseDps: 38, evolveLevel: 52, evolveTo: 473 },
+      229: { name: "Houndoom", lineId: 116, baseDps: 48 },
+      230: { name: "Kingdra", lineId: 33, baseDps: 55 },
+      241: { name: "Miltank", lineId: 34, baseDps: 46 },
+      246: { name: "Larvitar", lineId: 35, baseDps: 20, evolveLevel: 30, evolveTo: 247 },
+      247: { name: "Pupitar", lineId: 35, baseDps: 36, evolveLevel: 55, evolveTo: 248 },
+      248: { name: "Tyranitar", lineId: 35, baseDps: 72 },
+      249: { name: "Lugia", lineId: 36, baseDps: 88 },
+      250: { name: "Ho-Oh", lineId: 37, baseDps: 88 },
+      251: { name: "Celebi", lineId: 38, baseDps: 82 },
+
+      // Gen 3 Hoenn
+      252: { name: "Treecko", lineId: 39, baseDps: 15, evolveLevel: 16, evolveTo: 253 },
+      253: { name: "Grovyle", lineId: 39, baseDps: 27, evolveLevel: 36, evolveTo: 254 },
+      254: { name: "Sceptile", lineId: 39, baseDps: 52 },
+      255: { name: "Torchic", lineId: 40, baseDps: 15, evolveLevel: 16, evolveTo: 256 },
+      256: { name: "Combusken", lineId: 40, baseDps: 28, evolveLevel: 36, evolveTo: 257 },
+      257: { name: "Blaziken", lineId: 40, baseDps: 53 },
+      258: { name: "Mudkip", lineId: 41, baseDps: 15, evolveLevel: 16, evolveTo: 259 },
+      259: { name: "Marshtomp", lineId: 41, baseDps: 27, evolveLevel: 36, evolveTo: 260 },
+      260: { name: "Swampert", lineId: 41, baseDps: 52 },
+      276: { name: "Taillow", lineId: 117, baseDps: 15, evolveLevel: 22, evolveTo: 277 },
+      277: { name: "Swellow", lineId: 117, baseDps: 38 },
+      280: { name: "Ralts", lineId: 118, baseDps: 14, evolveLevel: 20, evolveTo: 281 },
+      281: { name: "Kirlia", lineId: 118, baseDps: 26, evolveLevel: 30, evolveTo: 282 },
+      282: { name: "Gardevoir", lineId: 118, baseDps: 54 },
+      287: { name: "Slakoth", lineId: 42, baseDps: 15, evolveLevel: 18, evolveTo: 288 },
+      288: { name: "Vigoroth", lineId: 42, baseDps: 34, evolveLevel: 36, evolveTo: 289 },
+      289: { name: "Slaking", lineId: 42, baseDps: 65 },
+      296: { name: "Makuhita", lineId: 119, baseDps: 16, evolveLevel: 24, evolveTo: 297 },
+      297: { name: "Hariyama", lineId: 119, baseDps: 42 },
+      299: { name: "Nosepass", lineId: 120, baseDps: 28 },
+      304: { name: "Aron", lineId: 121, baseDps: 16, evolveLevel: 32, evolveTo: 305 },
+      305: { name: "Lairon", lineId: 121, baseDps: 32, evolveLevel: 42, evolveTo: 306 },
+      306: { name: "Aggron", lineId: 121, baseDps: 55 },
+      324: { name: "Torkoal", lineId: 122, baseDps: 42 },
+      334: { name: "Altaria", lineId: 43, baseDps: 50 },
+      337: { name: "Lunatone", lineId: 123, baseDps: 42 },
+      338: { name: "Solrock", lineId: 124, baseDps: 42 },
+      345: { name: "Lileep", lineId: 205, baseDps: 22, evolveLevel: 40, evolveTo: 346 },
+      346: { name: "Cradily", lineId: 205, baseDps: 48 },
+      347: { name: "Anorith", lineId: 206, baseDps: 22, evolveLevel: 40, evolveTo: 348 },
+      348: { name: "Armaldo", lineId: 206, baseDps: 49 },
+      350: { name: "Milotic", lineId: 44, baseDps: 56 },
+      356: { name: "Dusclops", lineId: 125, baseDps: 45 },
+      359: { name: "Absol", lineId: 126, baseDps: 50 },
+      365: { name: "Walrein", lineId: 127, baseDps: 52 },
+      371: { name: "Bagon", lineId: 128, baseDps: 20, evolveLevel: 30, evolveTo: 372 },
+      372: { name: "Shelgon", lineId: 128, baseDps: 38, evolveLevel: 50, evolveTo: 373 },
+      373: { name: "Salamence", lineId: 128, baseDps: 73 },
+      374: { name: "Beldum", lineId: 45, baseDps: 20, evolveLevel: 20, evolveTo: 375 },
+      375: { name: "Metang", lineId: 45, baseDps: 38, evolveLevel: 45, evolveTo: 376 },
+      376: { name: "Metagross", lineId: 45, baseDps: 74 },
+      382: { name: "Kyogre", lineId: 129, baseDps: 90 },
+      383: { name: "Groudon", lineId: 130, baseDps: 90 },
+      384: { name: "Rayquaza", lineId: 46, baseDps: 92 },
+      385: { name: "Jirachi", lineId: 47, baseDps: 84 },
+      386: { name: "Deoxys", lineId: 48, baseDps: 88 },
+
+      // Gen 4 Sinnoh
+      387: { name: "Turtwig", lineId: 49, baseDps: 16, evolveLevel: 18, evolveTo: 388 },
+      388: { name: "Grotle", lineId: 49, baseDps: 29, evolveLevel: 32, evolveTo: 389 },
+      389: { name: "Torterra", lineId: 49, baseDps: 56 },
+      390: { name: "Chimchar", lineId: 50, baseDps: 16, evolveLevel: 14, evolveTo: 391 },
+      391: { name: "Monferno", lineId: 50, baseDps: 29, evolveLevel: 36, evolveTo: 392 },
+      392: { name: "Infernape", lineId: 50, baseDps: 57 },
+      393: { name: "Piplup", lineId: 51, baseDps: 16, evolveLevel: 16, evolveTo: 394 },
+      394: { name: "Prinplup", lineId: 51, baseDps: 29, evolveLevel: 36, evolveTo: 395 },
+      395: { name: "Empoleon", lineId: 51, baseDps: 56 },
+      403: { name: "Shinx", lineId: 131, baseDps: 16, evolveLevel: 15, evolveTo: 404 },
+      404: { name: "Luxio", lineId: 131, baseDps: 29, evolveLevel: 30, evolveTo: 405 },
+      405: { name: "Luxray", lineId: 131, baseDps: 54 },
+      407: { name: "Roserade", lineId: 52, baseDps: 52 },
+      408: { name: "Cranidos", lineId: 132, baseDps: 24, evolveLevel: 30, evolveTo: 409 },
+      409: { name: "Rampardos", lineId: 132, baseDps: 58 },
+      410: { name: "Shieldon", lineId: 133, baseDps: 22, evolveLevel: 30, evolveTo: 411 },
+      411: { name: "Bastiodon", lineId: 133, baseDps: 50 },
+      419: { name: "Floatzel", lineId: 134, baseDps: 48 },
+      429: { name: "Mismagius", lineId: 135, baseDps: 52 },
+      443: { name: "Gible", lineId: 57, baseDps: 22, evolveLevel: 24, evolveTo: 444 },
+      444: { name: "Gabite", lineId: 57, baseDps: 40, evolveLevel: 48, evolveTo: 445 },
+      445: { name: "Garchomp", lineId: 57, baseDps: 76 },
+      447: { name: "Riolu", lineId: 53, baseDps: 22, evolveLevel: 28, evolveTo: 448 },
+      448: { name: "Lucario", lineId: 53, baseDps: 62 },
+      450: { name: "Hippowdon", lineId: 136, baseDps: 56 },
+      460: { name: "Abomasnow", lineId: 137, baseDps: 54 },
+      466: { name: "Electivire", lineId: 55, baseDps: 64 },
+      473: { name: "Mamoswine", lineId: 56, baseDps: 63 },
+      475: { name: "Gallade", lineId: 138, baseDps: 60 },
+      483: { name: "Dialga", lineId: 58, baseDps: 94 },
+      484: { name: "Palkia", lineId: 59, baseDps: 94 },
+      487: { name: "Giratina", lineId: 60, baseDps: 95 },
+      490: { name: "Manaphy", lineId: 61, baseDps: 85 },
+      491: { name: "Darkrai", lineId: 62, baseDps: 88 },
+      492: { name: "Shaymin", lineId: 63, baseDps: 85 },
+
+      // Gen 5 Unova
+      494: { name: "Victini", lineId: 139, baseDps: 86 },
+      495: { name: "Snivy", lineId: 64, baseDps: 17, evolveLevel: 17, evolveTo: 496 },
+      496: { name: "Servine", lineId: 64, baseDps: 31, evolveLevel: 36, evolveTo: 497 },
+      497: { name: "Serperior", lineId: 64, baseDps: 58 },
+      498: { name: "Tepig", lineId: 65, baseDps: 17, evolveLevel: 17, evolveTo: 499 },
+      499: { name: "Pignite", lineId: 65, baseDps: 31, evolveLevel: 36, evolveTo: 500 },
+      500: { name: "Emboar", lineId: 65, baseDps: 59 },
+      501: { name: "Oshawott", lineId: 66, baseDps: 17, evolveLevel: 17, evolveTo: 502 },
+      502: { name: "Dewott", lineId: 66, baseDps: 31, evolveLevel: 36, evolveTo: 503 },
+      503: { name: "Samurott", lineId: 66, baseDps: 58 },
+      508: { name: "Watchog", lineId: 140, baseDps: 42 },
+      512: { name: "Simisage", lineId: 141, baseDps: 45 },
+      523: { name: "Zebstrika", lineId: 142, baseDps: 50 },
+      529: { name: "Drilbur", lineId: 67, baseDps: 22, evolveLevel: 31, evolveTo: 530 },
+      530: { name: "Excadrill", lineId: 67, baseDps: 66 },
+      534: { name: "Conkeldurr", lineId: 143, baseDps: 62 },
+      542: { name: "Leavanny", lineId: 144, baseDps: 52 },
+      553: { name: "Krookodile", lineId: 145, baseDps: 62 },
+      564: { name: "Tirtouga", lineId: 207, baseDps: 24, evolveLevel: 37, evolveTo: 565 },
+      565: { name: "Carracosta", lineId: 207, baseDps: 54 },
+      566: { name: "Archen", lineId: 208, baseDps: 26, evolveLevel: 37, evolveTo: 567 },
+      567: { name: "Archeops", lineId: 208, baseDps: 58 },
+      579: { name: "Reuniclus", lineId: 146, baseDps: 58 },
+      581: { name: "Swanna", lineId: 147, baseDps: 50 },
+      609: { name: "Chandelure", lineId: 148, baseDps: 65 },
+      610: { name: "Axew", lineId: 149, baseDps: 24, evolveLevel: 38, evolveTo: 611 },
+      611: { name: "Fraxure", lineId: 149, baseDps: 44, evolveLevel: 48, evolveTo: 612 },
+      612: { name: "Haxorus", lineId: 149, baseDps: 74 },
+      614: { name: "Beartic", lineId: 150, baseDps: 56 },
+      625: { name: "Bisharp", lineId: 151, baseDps: 62 },
+      635: { name: "Hydreigon", lineId: 68, baseDps: 78 },
+      637: { name: "Volcarona", lineId: 69, baseDps: 74 },
+      643: { name: "Reshiram", lineId: 70, baseDps: 96 },
+      644: { name: "Zekrom", lineId: 71, baseDps: 96 },
+      646: { name: "Kyurem", lineId: 72, baseDps: 98 },
+      647: { name: "Keldeo", lineId: 73, baseDps: 88 },
+      648: { name: "Meloetta", lineId: 74, baseDps: 88 },
+      649: { name: "Genesect", lineId: 75, baseDps: 90 },
+
+      // Gen 6 Kalos
+      650: { name: "Chespin", lineId: 76, baseDps: 18, evolveLevel: 16, evolveTo: 651 },
+      651: { name: "Quilladin", lineId: 76, baseDps: 33, evolveLevel: 36, evolveTo: 652 },
+      652: { name: "Chesnaught", lineId: 76, baseDps: 62 },
+      653: { name: "Fennekin", lineId: 77, baseDps: 18, evolveLevel: 16, evolveTo: 654 },
+      654: { name: "Braixen", lineId: 77, baseDps: 33, evolveLevel: 36, evolveTo: 655 },
+      655: { name: "Delphox", lineId: 77, baseDps: 62 },
+      656: { name: "Froakie", lineId: 78, baseDps: 18, evolveLevel: 16, evolveTo: 657 },
+      657: { name: "Frogadier", lineId: 78, baseDps: 33, evolveLevel: 36, evolveTo: 658 },
+      658: { name: "Greninja", lineId: 78, baseDps: 65 },
+      661: { name: "Fletchling", lineId: 152, baseDps: 16, evolveLevel: 17, evolveTo: 662 },
+      662: { name: "Fletchinder", lineId: 152, baseDps: 32, evolveLevel: 35, evolveTo: 663 },
+      663: { name: "Talonflame", lineId: 152, baseDps: 60 },
+      666: { name: "Vivillon", lineId: 153, baseDps: 48 },
+      668: { name: "Pyroar", lineId: 79, baseDps: 58 },
+      673: { name: "Gogoat", lineId: 154, baseDps: 56 },
+      675: { name: "Pangoro", lineId: 155, baseDps: 60 },
+      678: { name: "Meowstic", lineId: 156, baseDps: 54 },
+      679: { name: "Honedge", lineId: 80, baseDps: 22, evolveLevel: 35, evolveTo: 680 },
+      680: { name: "Doublade", lineId: 80, baseDps: 42, evolveLevel: 50, evolveTo: 681 },
+      681: { name: "Aegislash", lineId: 80, baseDps: 68 },
+      693: { name: "Clawitzer", lineId: 81, baseDps: 58 },
+      695: { name: "Heliolisk", lineId: 157, baseDps: 56 },
+      696: { name: "Tyrunt", lineId: 158, baseDps: 26, evolveLevel: 39, evolveTo: 697 },
+      697: { name: "Tyrantrum", lineId: 158, baseDps: 66 },
+      698: { name: "Amaura", lineId: 159, baseDps: 25, evolveLevel: 39, evolveTo: 699 },
+      699: { name: "Aurorus", lineId: 159, baseDps: 64 },
+      700: { name: "Sylveon", lineId: 160, baseDps: 62 },
+      701: { name: "Hawlucha", lineId: 161, baseDps: 60 },
+      704: { name: "Goomy", lineId: 82, baseDps: 24, evolveLevel: 40, evolveTo: 705 },
+      705: { name: "Sliggoo", lineId: 82, baseDps: 44, evolveLevel: 50, evolveTo: 706 },
+      706: { name: "Goodra", lineId: 82, baseDps: 76 },
+      713: { name: "Avalugg", lineId: 162, baseDps: 62 },
+      715: { name: "Noivern", lineId: 83, baseDps: 68 },
+      716: { name: "Xerneas", lineId: 84, baseDps: 98 },
+      717: { name: "Yveltal", lineId: 85, baseDps: 98 },
+      718: { name: "Zygarde", lineId: 86, baseDps: 96 },
+      719: { name: "Diancie", lineId: 87, baseDps: 90 },
+      720: { name: "Hoopa", lineId: 88, baseDps: 92 },
+      721: { name: "Volcanion", lineId: 89, baseDps: 94 },
+
+      // Gen 7 Alola
+      722: { name: "Rowlet", lineId: 90, baseDps: 19, evolveLevel: 17, evolveTo: 723 },
+      723: { name: "Dartrix", lineId: 90, baseDps: 35, evolveLevel: 34, evolveTo: 724 },
+      724: { name: "Decidueye", lineId: 90, baseDps: 66 },
+      725: { name: "Litten", lineId: 91, baseDps: 19, evolveLevel: 17, evolveTo: 726 },
+      726: { name: "Torracat", lineId: 91, baseDps: 35, evolveLevel: 34, evolveTo: 727 },
+      727: { name: "Incineroar", lineId: 91, baseDps: 67 },
+      728: { name: "Popplio", lineId: 92, baseDps: 19, evolveLevel: 17, evolveTo: 729 },
+      729: { name: "Brionne", lineId: 92, baseDps: 35, evolveLevel: 34, evolveTo: 730 },
+      730: { name: "Primarina", lineId: 92, baseDps: 66 },
+      733: { name: "Toucannon", lineId: 163, baseDps: 58 },
+      735: { name: "Gumshoos", lineId: 164, baseDps: 52 },
+      738: { name: "Vikavolt", lineId: 165, baseDps: 62 },
+      740: { name: "Crabominable", lineId: 166, baseDps: 62 },
+      745: { name: "Lycanroc", lineId: 167, baseDps: 62 },
+      746: { name: "Wishiwashi", lineId: 168, baseDps: 64 },
+      750: { name: "Mudsdale", lineId: 169, baseDps: 64 },
+      752: { name: "Araquanid", lineId: 170, baseDps: 60 },
+      754: { name: "Lurantis", lineId: 171, baseDps: 60 },
+      758: { name: "Salazzle", lineId: 172, baseDps: 63 },
+      760: { name: "Bewear", lineId: 173, baseDps: 64 },
+      768: { name: "Golisopod", lineId: 174, baseDps: 68 },
+      776: { name: "Turtonator", lineId: 175, baseDps: 62 },
+      777: { name: "Togedemaru", lineId: 176, baseDps: 58 },
+      778: { name: "Mimikyu", lineId: 177, baseDps: 66 },
+      782: { name: "Jangmo-o", lineId: 93, baseDps: 25, evolveLevel: 35, evolveTo: 783 },
+      783: { name: "Hakamo-o", lineId: 93, baseDps: 46, evolveLevel: 45, evolveTo: 784 },
+      784: { name: "Kommo-o", lineId: 93, baseDps: 78 },
+      785: { name: "Tapu Koko", lineId: 94, baseDps: 92 },
+      791: { name: "Solgaleo", lineId: 95, baseDps: 102 },
+      792: { name: "Lunala", lineId: 96, baseDps: 102 },
+      793: { name: "Nihilego", lineId: 97, baseDps: 90 },
+      800: { name: "Necrozma", lineId: 98, baseDps: 105 },
+      801: { name: "Magearna", lineId: 99, baseDps: 94 },
+      802: { name: "Marshadow", lineId: 100, baseDps: 96 },
+      807: { name: "Zeraora", lineId: 178, baseDps: 96 },
+      808: { name: "Meltan", lineId: 179, baseDps: 35, evolveLevel: 50, evolveTo: 809 },
+      809: { name: "Melmetal", lineId: 179, baseDps: 98 },
+
+      // Gen 8 Galar
+      810: { name: "Grookey", lineId: 180, baseDps: 20, evolveLevel: 16, evolveTo: 811 },
+      811: { name: "Thwackey", lineId: 180, baseDps: 38, evolveLevel: 35, evolveTo: 812 },
+      812: { name: "Rillaboom", lineId: 180, baseDps: 70 },
+      813: { name: "Scorbunny", lineId: 181, baseDps: 20, evolveLevel: 16, evolveTo: 814 },
+      814: { name: "Raboot", lineId: 181, baseDps: 38, evolveLevel: 35, evolveTo: 815 },
+      815: { name: "Cinderace", lineId: 181, baseDps: 71 },
+      816: { name: "Sobble", lineId: 182, baseDps: 20, evolveLevel: 16, evolveTo: 817 },
+      817: { name: "Drizzile", lineId: 182, baseDps: 38, evolveLevel: 35, evolveTo: 818 },
+      818: { name: "Inteleon", lineId: 182, baseDps: 70 },
+      821: { name: "Rookidee", lineId: 183, baseDps: 18, evolveLevel: 18, evolveTo: 822 },
+      822: { name: "Corvisquire", lineId: 183, baseDps: 34, evolveLevel: 38, evolveTo: 823 },
+      823: { name: "Corviknight", lineId: 183, baseDps: 66 },
+      830: { name: "Eldegoss", lineId: 184, baseDps: 56 },
+      831: { name: "Wooloo", lineId: 185, baseDps: 18, evolveLevel: 24, evolveTo: 832 },
+      832: { name: "Dubwool", lineId: 185, baseDps: 58 },
+      834: { name: "Drednaw", lineId: 186, baseDps: 62 },
+      839: { name: "Coalossal", lineId: 187, baseDps: 64 },
+      849: { name: "Toxtricity", lineId: 188, baseDps: 68 },
+      851: { name: "Centiskorch", lineId: 189, baseDps: 66 },
+      858: { name: "Hatterene", lineId: 190, baseDps: 66 },
+      861: { name: "Grimmsnarl", lineId: 191, baseDps: 68 },
+      862: { name: "Obstagoon", lineId: 192, baseDps: 65 },
+      869: { name: "Alcremie", lineId: 193, baseDps: 62 },
+      879: { name: "Copperajah", lineId: 194, baseDps: 66 },
+      880: { name: "Dracozolt", lineId: 195, baseDps: 70 },
+      882: { name: "Dracovish", lineId: 196, baseDps: 74 },
+      884: { name: "Duraludon", lineId: 197, baseDps: 72 },
+      885: { name: "Dreepy", lineId: 198, baseDps: 26, evolveLevel: 50, evolveTo: 886 },
+      886: { name: "Drakloak", lineId: 198, baseDps: 48, evolveLevel: 60, evolveTo: 887 },
+      887: { name: "Dragapult", lineId: 198, baseDps: 82 },
+      888: { name: "Zacian", lineId: 199, baseDps: 112 },
+      889: { name: "Zamazenta", lineId: 200, baseDps: 110 },
+      890: { name: "Eternatus", lineId: 201, baseDps: 115 },
+      891: { name: "Kubfu", lineId: 202, baseDps: 45, evolveLevel: 60, evolveTo: 892 },
+      892: { name: "Urshifu", lineId: 202, baseDps: 102 },
+      893: { name: "Zarude", lineId: 203, baseDps: 98 },
+      898: { name: "Calyrex", lineId: 204, baseDps: 108 }
+    };
+
+    // Alle geëvolueerde vormen (Stage 2 en Stage 3) zodat deze NIET op vroege routes spawnen!
+    const EVOLVED_POKEMON_IDS = new Set([
+      // Gen 1 Evolved
+      2,3, 5,6, 8,9, 11,12, 14,15, 17,18, 20, 22, 24, 26, 28, 30,31, 33,34, 36, 38, 40, 42, 44,45, 47, 49, 51, 53, 55, 57, 59, 61,62, 64,65, 67,68, 70,71, 73, 75,76, 78, 80, 82, 85, 87, 89, 91, 93,94, 97, 99, 101, 103, 105, 110, 112, 117, 119, 121, 130, 134,135,136, 139, 141, 148,149,
+      // Gen 2 Evolved
+      153,154, 156,157, 159,160, 162, 164, 166, 168, 169, 171, 176, 178, 180,181, 182, 184, 186, 188,189, 192, 195, 196,197, 199, 203, 205, 208, 210, 212, 217, 219, 221, 224, 226, 229, 230, 232, 233, 237, 242, 247,248,
+      // Gen 3 Evolved
+      253,254, 256,257, 259,260, 262, 264, 266,267, 268,269, 271,272, 274,275, 277, 279, 281,282, 284, 286, 288,289, 291,292, 294,295, 297, 301, 305,306, 308, 310, 317, 319, 321, 323, 326, 329,330, 332, 334, 340, 342, 344, 346, 348, 350, 354, 356, 362, 364,365, 367,368, 372,373, 375,376,
+      // Gen 4 Evolved
+      388,389, 391,392, 394,395, 397,398, 400, 402, 404,405, 407, 409, 411, 413,414, 416, 419, 421, 423, 424, 426, 428, 429, 430, 432, 435, 437, 444,445, 448, 450, 452, 454, 457, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470,471,472,473,474,475,476,477,478,
+      // Gen 5 Evolved
+      496,497, 499,500, 502,503, 505, 507,508, 510, 512, 514, 516, 518, 520,521, 523, 525,526, 528, 530, 533,534, 536,537, 541,542, 544,545, 547, 549, 552,553, 555, 558, 560, 563, 565, 567, 569, 571, 573, 575,576, 578,579, 581, 583,584, 586, 589, 591, 593, 596, 598, 600,601, 603,604, 606, 608,609, 611,612, 614, 617, 620, 623, 625, 628, 630, 634,635, 637,
+      // Gen 6 Evolved
+      651,652, 654,655, 657,658, 660, 662,663, 665,666, 668, 670,671, 673, 675, 678, 680,681, 683, 685, 687, 689, 691, 693, 695, 697, 699, 700, 705,706, 709, 711, 713, 715,
+      // Gen 7 Evolved
+      723,724, 726,727, 729,730, 732,733, 735, 737,738, 740, 743, 745, 748, 750, 752, 754, 756, 758, 760, 762,763, 768, 770, 773, 783,784, 790,791,792, 804, 809,
+      // Gen 8 Evolved
+      811,812, 814,815, 817,818, 820, 822,823, 825,826, 828, 830, 832, 834, 836, 838,839, 841,842, 844, 847, 849, 851, 853, 855, 857,858, 860,861, 862, 863, 864, 865, 866, 867, 869, 873, 879, 886,887, 892
+    ]);
+
+    for (let id = 1; id <= 898; id++) {
+      if (!POKEMON_DB[id]) {
+        const isEvolved = EVOLVED_POKEMON_IDS.has(id);
+        POKEMON_DB[id] = {
+          name: `Pokémon #${id}`,
+          lineId: 1000 + id,
+          baseDps: Math.min(95, Math.round((isEvolved ? 30 : 14) + (id * 0.05))),
+          evolveLevel: null,
+          evolveTo: null
+        };
+      }
+    }
+
+    // Koppel voor niet-handmatig gekoppelde basis-Pokémon automatisch hun evolutie zodat alles door-evolueert!
+    for (let id = 1; id <= 897; id++) {
+      const cur = POKEMON_DB[id];
+      const next = POKEMON_DB[id + 1];
+      if (cur && next && cur.lineId >= 1000 && !cur.evolveTo && EVOLVED_POKEMON_IDS.has(id + 1)) {
+        cur.evolveTo = id + 1;
+        cur.evolveLevel = EVOLVED_POKEMON_IDS.has(id) ? 36 : 22;
+        next.lineId = cur.lineId;
+      }
+    }
+
+    // Haal alle 898 officiële namen op via PokéAPI
+    fetch("https://pokeapi.co/api/v2/pokemon?limit=898")
+      .then(res => res.json())
+      .then(data => {
+        data.results.forEach((item, index) => {
+          const id = index + 1;
+          if (POKEMON_DB[id]) {
+            POKEMON_DB[id].name = item.name.charAt(0).toUpperCase() + item.name.slice(1);
+          }
+        });
+        updateAllUI();
+      })
+      .catch(() => console.log("Offline mode: using default names."));
+
+    // ===================== 2. VOLLEDIGE INDIVIDUELE ROUTE- & RARE SPAWN-GENERATOR =====================
+    const STARTER_FAMILY_IDS = new Set([
+      1,2,3, 4,5,6, 7,8,9,
+      152,153,154, 155,156,157, 158,159,160,
+      252,253,254, 255,256,257, 258,259,260,
+      387,388,389, 390,391,392, 393,394,395,
+      495,496,497, 498,499,500, 501,502,503,
+      650,651,652, 653,654,655, 656,657,658,
+      722,723,724, 725,726,727, 728,729,730,
+      810,811,812, 813,814,815, 816,817,818
+    ]);
+
+    const BASE_MAJOR_AREAS = [
+      // --- KANTO ---
+      { id: "k_d1", region: "kanto", type: "dungeon", name: "Viridian Forest", timer: 40, minLv: 4, maxLv: 6, baseHp: 65, reward: 18, spawns: [10, 13, 25], rareStarters: [1], boss: { id: 12, title: "Boss Butterfree", lv: 7, hpMult: 2.5 } },
+      { id: "k_g1", region: "kanto", type: "gym", name: "Pewter Gym (Brock)", badgeId: "boulder", badgeName: "Boulder Badge", capLv: 12, timer: 45, baseHp: 150, reward: 200, waves: [{ id: 74, title: "Camper's Geodude", lv: 10 }, { id: 74, title: "Brock's Geodude", lv: 11 }, { id: 95, title: "Brock's Onix (Ace)", lv: 12, isBoss: true }] },
+      { id: "k_d2", region: "kanto", type: "dungeon", name: "Mt. Moon", timer: 45, minLv: 10, maxLv: 13, baseHp: 180, reward: 45, spawns: [41, 74, 35], rareStarters: [4], rareFossils: [138, 140], boss: { id: 75, title: "Boss Graveler", lv: 14, hpMult: 2.8 } },
+      { id: "k_g2", region: "kanto", type: "gym", name: "Cerulean Gym (Misty)", badgeId: "cascade", badgeName: "Cascade Badge", capLv: 18, timer: 45, baseHp: 350, reward: 400, waves: [{ id: 7, title: "Swimmer's Squirtle", lv: 15 }, { id: 120, title: "Misty's Staryu", lv: 16 }, { id: 121, title: "Misty's Starmie (Ace)", lv: 18, isBoss: true }] },
+      { id: "k_g3", region: "kanto", type: "gym", name: "Vermilion Gym (Lt. Surge)", badgeId: "thunder", badgeName: "Thunder Badge", capLv: 24, timer: 50, baseHp: 700, reward: 700, waves: [{ id: 25, title: "Sailor's Pikachu", lv: 21 }, { id: 25, title: "Lt. Surge's Pikachu", lv: 22 }, { id: 26, title: "Lt. Surge's Raichu (Ace)", lv: 24, isBoss: true }] },
+      { id: "k_d4", region: "kanto", type: "dungeon", name: "Rock Tunnel & Power Plant", timer: 50, minLv: 22, maxLv: 26, baseHp: 850, reward: 220, spawns: [66, 74, 81], rareFossils: [142], rareMythicals: [145], boss: { id: 145, title: "Legendary Zapdos", lv: 27, hpMult: 3.4 } },
+      { id: "k_g4", region: "kanto", type: "gym", name: "Celadon Gym (Erika)", badgeId: "rainbow", badgeName: "Rainbow Badge", capLv: 30, timer: 50, baseHp: 1200, reward: 1100, waves: [{ id: 43, title: "Beauty's Oddish", lv: 27 }, { id: 44, title: "Erika's Gloom", lv: 28 }, { id: 45, title: "Erika's Vileplume (Ace)", lv: 30, isBoss: true }] },
+      { id: "k_d5", region: "kanto", type: "dungeon", name: "Pokémon Tower (Lavender)", timer: 55, minLv: 28, maxLv: 33, baseHp: 1650, reward: 420, spawns: [92, 104], boss: { id: 94, title: "Boss Gengar", lv: 34, hpMult: 3.6 } },
+      { id: "k_g5", region: "kanto", type: "gym", name: "Fuchsia Gym (Koga)", badgeId: "soul", badgeName: "Soul Badge", capLv: 38, timer: 55, baseHp: 2100, reward: 1600, waves: [{ id: 42, title: "Juggler's Golbat", lv: 34 }, { id: 109, title: "Koga's Koffing", lv: 36 }, { id: 110, title: "Koga's Weezing (Ace)", lv: 38, isBoss: true }] },
+      { id: "k_g6", region: "kanto", type: "gym", name: "Saffron Gym (Sabrina)", badgeId: "marsh", badgeName: "Marsh Badge", capLv: 43, timer: 55, baseHp: 3200, reward: 2200, waves: [{ id: 63, title: "Psychic's Abra", lv: 39 }, { id: 64, title: "Sabrina's Kadabra", lv: 41 }, { id: 65, title: "Sabrina's Alakazam (Ace)", lv: 43, isBoss: true }] },
+      { id: "k_d6", region: "kanto", type: "dungeon", name: "Seafoam Islands & Mansion", timer: 55, minLv: 38, maxLv: 42, baseHp: 2900, reward: 750, spawns: [58, 109, 120], rareFossils: [138, 140, 142], rareMythicals: [151], boss: { id: 144, title: "Legendary Articuno", lv: 44, hpMult: 4.0 } },
+      { id: "k_g7", region: "kanto", type: "gym", name: "Cinnabar Gym (Blaine)", badgeId: "volcano", badgeName: "Volcano Badge", capLv: 47, timer: 55, baseHp: 4800, reward: 3000, waves: [{ id: 58, title: "Burglar's Growlithe", lv: 43 }, { id: 58, title: "Blaine's Growlithe", lv: 45 }, { id: 59, title: "Blaine's Arcanine (Ace)", lv: 47, isBoss: true }] },
+      { id: "k_g8", region: "kanto", type: "gym", name: "Viridian Gym (Giovanni)", badgeId: "earth", badgeName: "Earth Badge", capLv: 50, timer: 60, baseHp: 7000, reward: 4000, waves: [{ id: 95, title: "Cooltrainer's Onix", lv: 46 }, { id: 111, title: "Giovanni's Rhyhorn", lv: 48 }, { id: 112, title: "Giovanni's Rhydon (Ace)", lv: 50, isBoss: true }] },
+      { id: "k_d7", region: "kanto", type: "dungeon", name: "Victory Road & Cerulean Cave", timer: 60, minLv: 47, maxLv: 51, baseHp: 8500, reward: 4800, spawns: [74, 111, 147], rareMythicals: [146, 150, 151], boss: { id: 150, title: "Legendary Mewtwo", lv: 53, hpMult: 4.5 } },
+      { id: "k_league", region: "kanto", type: "league", name: "Indigo Plateau (Kanto E4 & Champion)", badgeId: "kanto_champ", badgeName: "Kanto Champion Trophy", capLv: 55, timer: 65, baseHp: 10500, reward: 8000, waves: [{ id: 131, title: "E4 Lorelei's Lapras", lv: 52 }, { id: 68, title: "E4 Bruno's Machamp", lv: 53 }, { id: 94, title: "E4 Agatha's Gengar", lv: 54 }, { id: 149, title: "E4 Lance's Dragonite", lv: 55 }, { id: 6, title: "Champion Blue's Charizard", lv: 56, isBoss: true }] },
+
+      // --- JOHTO ---
+      { id: "j_g1", region: "johto", type: "gym", name: "Violet Gym (Falkner)", badgeId: "zephyr", badgeName: "Zephyr Badge", capLv: 58, timer: 55, baseHp: 16000, reward: 6000, waves: [{ id: 16, title: "Bird Keeper's Pidgey", lv: 55 }, { id: 17, title: "Falkner's Pidgeotto", lv: 57 }, { id: 18, title: "Falkner's Pidgeot (Ace)", lv: 58, isBoss: true }] },
+      { id: "j_d1", region: "johto", type: "dungeon", name: "Union Cave & Ilex Forest", timer: 50, minLv: 57, maxLv: 60, baseHp: 18000, reward: 6600, spawns: [179, 194, 214], rareStarters: [152, 155, 158], rareMythicals: [251], boss: { id: 251, title: "Mythical Celebi", lv: 60, hpMult: 3.5 } },
+      { id: "j_g2", region: "johto", type: "gym", name: "Azalea Gym (Bugsy)", badgeId: "hive", badgeName: "Hive Badge", capLv: 61, timer: 55, baseHp: 20000, reward: 7200, waves: [{ id: 11, title: "Twins' Metapod", lv: 58 }, { id: 12, title: "Bugsy's Butterfree", lv: 60 }, { id: 212, title: "Bugsy's Scizor (Ace)", lv: 61, isBoss: true }] },
+      { id: "j_g3", region: "johto", type: "gym", name: "Goldenrod Gym (Whitney)", badgeId: "plain", badgeName: "Plain Badge", capLv: 64, timer: 55, baseHp: 25000, reward: 8500, waves: [{ id: 35, title: "Lass's Clefairy", lv: 61 }, { id: 35, title: "Whitney's Clefairy", lv: 62 }, { id: 241, title: "Whitney's Miltank (Ace)", lv: 64, isBoss: true }] },
+      { id: "j_g4", region: "johto", type: "gym", name: "Ecruteak Gym (Morty)", badgeId: "fog", badgeName: "Fog Badge", capLv: 68, timer: 55, baseHp: 31000, reward: 10000, waves: [{ id: 93, title: "Medium's Haunter", lv: 65 }, { id: 93, title: "Morty's Haunter", lv: 67 }, { id: 94, title: "Morty's Gengar (Ace)", lv: 68, isBoss: true }] },
+      { id: "j_g5", region: "johto", type: "gym", name: "Cianwood Gym (Chuck)", badgeId: "storm", badgeName: "Storm Badge", capLv: 71, timer: 55, baseHp: 38000, reward: 12000, waves: [{ id: 67, title: "Blackbelt's Machoke", lv: 68 }, { id: 67, title: "Chuck's Machoke", lv: 70 }, { id: 62, title: "Chuck's Poliwrath (Ace)", lv: 71, isBoss: true }] },
+      { id: "j_g6", region: "johto", type: "gym", name: "Olivine Gym (Jasmine)", badgeId: "mineral", badgeName: "Mineral Badge", capLv: 75, timer: 60, baseHp: 47000, reward: 14500, waves: [{ id: 81, title: "Pokéfan's Magnemite", lv: 72 }, { id: 81, title: "Jasmine's Magnemite", lv: 73 }, { id: 208, title: "Jasmine's Steelix (Ace)", lv: 75, isBoss: true }] },
+      { id: "j_g7", region: "johto", type: "gym", name: "Mahogany Gym (Pryce)", badgeId: "glacier", badgeName: "Glacier Badge", capLv: 78, timer: 60, baseHp: 57000, reward: 17500, waves: [{ id: 220, title: "Skier's Swinub", lv: 75 }, { id: 220, title: "Pryce's Seel", lv: 76 }, { id: 221, title: "Pryce's Piloswine (Ace)", lv: 78, isBoss: true }] },
+      { id: "j_d2", region: "johto", type: "dungeon", name: "Ice Path & Mt. Silver", timer: 60, minLv: 77, maxLv: 81, baseHp: 62000, reward: 19000, spawns: [220, 228, 246], rareMythicals: [249, 250], boss: { id: 249, title: "Legendary Lugia", lv: 82, hpMult: 4.2 } },
+      { id: "j_g8", region: "johto", type: "gym", name: "Blackthorn Gym (Clair)", badgeId: "rising", badgeName: "Rising Badge", capLv: 82, timer: 60, baseHp: 68000, reward: 21000, waves: [{ id: 148, title: "Dragon Tamer's Dragonair", lv: 79 }, { id: 148, title: "Clair's Dragonair", lv: 80 }, { id: 230, title: "Clair's Kingdra (Ace)", lv: 82, isBoss: true }] },
+      { id: "johto_league", region: "johto", type: "league", name: "Indigo Plateau (Johto E4 & Champion)", badgeId: "johto_champ", badgeName: "Johto Champion Trophy", capLv: 86, timer: 65, baseHp: 82000, reward: 30000, waves: [{ id: 178, title: "E4 Will's Xatu", lv: 83 }, { id: 169, title: "E4 Koga's Crobat", lv: 84 }, { id: 68, title: "E4 Bruno's Machamp", lv: 85 }, { id: 197, title: "E4 Karen's Umbreon", lv: 86 }, { id: 149, title: "Champion Lance's Dragonite", lv: 88, isBoss: true }] },
+
+      // --- HOENN ---
+      { id: "h_g1", region: "hoenn", type: "gym", name: "Rustboro Gym (Roxanne)", badgeId: "stone", badgeName: "Stone Badge", capLv: 88, timer: 55, baseHp: 115000, reward: 40000, waves: [{ id: 74, title: "Lass's Geodude", lv: 85 }, { id: 299, title: "Roxanne's Nosepass", lv: 87 }, { id: 299, title: "Roxanne's Nosepass (Ace)", lv: 88, isBoss: true }] },
+      { id: "h_g2", region: "hoenn", type: "gym", name: "Dewford Gym (Brawly)", badgeId: "knuckle", badgeName: "Knuckle Badge", capLv: 91, timer: 55, baseHp: 140000, reward: 46000, waves: [{ id: 66, title: "Battle Girl's Machop", lv: 88 }, { id: 296, title: "Brawly's Makuhita", lv: 90 }, { id: 297, title: "Brawly's Hariyama (Ace)", lv: 91, isBoss: true }] },
+      { id: "h_g3", region: "hoenn", type: "gym", name: "Mauville Gym (Wattson)", badgeId: "dynamo", badgeName: "Dynamo Badge", capLv: 94, timer: 55, baseHp: 170000, reward: 53000, waves: [{ id: 81, title: "Guitarist's Magnemite", lv: 91 }, { id: 81, title: "Wattson's Magnemite", lv: 93 }, { id: 82, title: "Wattson's Magneton (Ace)", lv: 94, isBoss: true }] },
+      { id: "h_d1", region: "hoenn", type: "dungeon", name: "Fiery Path & Meteor Falls", timer: 55, minLv: 93, maxLv: 97, baseHp: 188000, reward: 57000, spawns: [218, 324, 371], rareStarters: [255], rareFossils: [345, 347], rareMythicals: [385], boss: { id: 373, title: "Boss Salamence", lv: 98, hpMult: 3.8 } },
+      { id: "h_g4", region: "hoenn", type: "gym", name: "Lavaridge Gym (Flannery)", badgeId: "heat", badgeName: "Heat Badge", capLv: 98, timer: 60, baseHp: 205000, reward: 61000, waves: [{ id: 218, title: "Aroma Lady's Slugma", lv: 95 }, { id: 324, title: "Flannery's Torkoal", lv: 97 }, { id: 324, title: "Flannery's Torkoal (Ace)", lv: 98, isBoss: true }] },
+      { id: "h_g5", region: "hoenn", type: "gym", name: "Petalburg Gym (Norman)", badgeId: "balance", badgeName: "Balance Badge", capLv: 102, timer: 60, baseHp: 250000, reward: 70000, waves: [{ id: 288, title: "Cooltrainer's Vigoroth", lv: 99 }, { id: 288, title: "Norman's Vigoroth", lv: 101 }, { id: 289, title: "Norman's Slaking (Ace)", lv: 102, isBoss: true }] },
+      { id: "h_g6", region: "hoenn", type: "gym", name: "Fortree Gym (Winona)", badgeId: "feather", badgeName: "Feather Badge", capLv: 106, timer: 60, baseHp: 300000, reward: 80000, waves: [{ id: 277, title: "Bird Keeper's Swellow", lv: 103 }, { id: 334, title: "Winona's Altaria", lv: 105 }, { id: 334, title: "Winona's Altaria (Ace)", lv: 106, isBoss: true }] },
+      { id: "h_g7", region: "hoenn", type: "gym", name: "Mossdeep Gym (Tate & Liza)", badgeId: "mind", badgeName: "Mind Badge", capLv: 110, timer: 65, baseHp: 365000, reward: 92000, waves: [{ id: 337, title: "Psychic's Lunatone", lv: 107 }, { id: 338, title: "Tate & Liza's Solrock", lv: 109 }, { id: 338, title: "Tate & Liza's Solrock/Lunatone (Ace)", lv: 110, isBoss: true }] },
+      { id: "h_d2", region: "hoenn", type: "dungeon", name: "Sky Pillar & Seafloor Cavern", timer: 65, minLv: 110, maxLv: 114, baseHp: 405000, reward: 98000, spawns: [355, 359, 374], rareMythicals: [382, 383, 384, 386], boss: { id: 384, title: "Legendary Rayquaza", lv: 115, hpMult: 4.5 } },
+      { id: "h_g8", region: "hoenn", type: "gym", name: "Sootopolis Gym (Wallace)", badgeId: "rain", badgeName: "Rain Badge", capLv: 115, timer: 65, baseHp: 440000, reward: 105000, waves: [{ id: 365, title: "Wallace's Walrein", lv: 112 }, { id: 350, title: "Wallace's Milotic", lv: 114 }, { id: 350, title: "Wallace's Milotic (Ace)", lv: 115, isBoss: true }] },
+      { id: "hoenn_league", region: "hoenn", type: "league", name: "Ever Grande (Hoenn E4 & Champion)", badgeId: "hoenn_champ", badgeName: "Hoenn Champion Trophy", capLv: 120, timer: 70, baseHp: 530000, reward: 130000, waves: [{ id: 359, title: "E4 Sidney's Absol", lv: 116 }, { id: 356, title: "E4 Phoebe's Dusclops", lv: 117 }, { id: 365, title: "E4 Glacia's Walrein", lv: 118 }, { id: 373, title: "E4 Drake's Salamence", lv: 119 }, { id: 376, title: "Champion Steven's Metagross", lv: 122, isBoss: true }] },
+
+      // --- SINNOH ---
+      { id: "s_g1", region: "sinnoh", type: "gym", name: "Oreburgh Gym (Roark)", badgeId: "coal", badgeName: "Coal Badge", capLv: 122, timer: 60, baseHp: 720000, reward: 175000, waves: [{ id: 74, title: "Youngster's Geodude", lv: 119 }, { id: 408, title: "Roark's Cranidos", lv: 121 }, { id: 409, title: "Roark's Rampardos (Ace)", lv: 122, isBoss: true }] },
+      { id: "s_g2", region: "sinnoh", type: "gym", name: "Eterna Gym (Gardenia)", badgeId: "forest", badgeName: "Forest Badge", capLv: 126, timer: 60, baseHp: 850000, reward: 200000, waves: [{ id: 388, title: "Gardenia's Grotle", lv: 123 }, { id: 407, title: "Gardenia's Roserade", lv: 125 }, { id: 407, title: "Gardenia's Roserade (Ace)", lv: 126, isBoss: true }] },
+      { id: "s_g3", region: "sinnoh", type: "gym", name: "Veilstone Gym (Maylene)", badgeId: "cobble", badgeName: "Cobble Badge", capLv: 130, timer: 60, baseHp: 1000000, reward: 230000, waves: [{ id: 67, title: "Blackbelt's Machoke", lv: 127 }, { id: 448, title: "Maylene's Lucario", lv: 129 }, { id: 448, title: "Maylene's Lucario (Ace)", lv: 130, isBoss: true }] },
+      { id: "s_g4", region: "sinnoh", type: "gym", name: "Pastoria Gym (Crasher Wake)", badgeId: "fen", badgeName: "Fen Badge", capLv: 134, timer: 60, baseHp: 1150000, reward: 265000, waves: [{ id: 195, title: "Fisherman's Quagsire", lv: 131 }, { id: 130, title: "Wake's Gyarados", lv: 133 }, { id: 419, title: "Wake's Floatzel (Ace)", lv: 134, isBoss: true }] },
+      { id: "s_g5", region: "sinnoh", type: "gym", name: "Hearthome Gym (Fantina)", badgeId: "relic", badgeName: "Relic Badge", capLv: 138, timer: 65, baseHp: 1350000, reward: 305000, waves: [{ id: 93, title: "Psychic's Haunter", lv: 135 }, { id: 429, title: "Fantina's Mismagius", lv: 137 }, { id: 429, title: "Fantina's Mismagius (Ace)", lv: 138, isBoss: true }] },
+      { id: "s_g6", region: "sinnoh", type: "gym", name: "Canalave Gym (Byron)", badgeId: "mine", badgeName: "Mine Badge", capLv: 143, timer: 65, baseHp: 1600000, reward: 350000, waves: [{ id: 208, title: "Byron's Steelix", lv: 140 }, { id: 411, title: "Byron's Bastiodon", lv: 142 }, { id: 411, title: "Byron's Bastiodon (Ace)", lv: 143, isBoss: true }] },
+      { id: "s_g7", region: "sinnoh", type: "gym", name: "Snowpoint Gym (Candice)", badgeId: "icicle", badgeName: "Icicle Badge", capLv: 148, timer: 65, baseHp: 1900000, reward: 405000, waves: [{ id: 473, title: "Candice's Mamoswine", lv: 145 }, { id: 460, title: "Candice's Abomasnow", lv: 147 }, { id: 460, title: "Candice's Abomasnow (Ace)", lv: 148, isBoss: true }] },
+      { id: "s_d1", region: "sinnoh", type: "dungeon", name: "Spear Pillar & Distortion World", timer: 70, minLv: 148, maxLv: 152, baseHp: 2100000, reward: 440000, spawns: [443, 447, 459], rareFossils: [408, 410], rareMythicals: [483, 484, 487, 491, 492], boss: { id: 487, title: "Legendary Giratina", lv: 153, hpMult: 4.5 } },
+      { id: "s_g8", region: "sinnoh", type: "gym", name: "Sunyshore Gym (Volkner)", badgeId: "beacon", badgeName: "Beacon Badge", capLv: 154, timer: 70, baseHp: 2250000, reward: 470000, waves: [{ id: 405, title: "Volkner's Luxray", lv: 151 }, { id: 466, title: "Volkner's Electivire", lv: 153 }, { id: 466, title: "Volkner's Electivire (Ace)", lv: 154, isBoss: true }] },
+      { id: "sinnoh_league", region: "sinnoh", type: "league", name: "Pokémon League (Sinnoh E4 & Champion)", badgeId: "sinnoh_champ", badgeName: "Sinnoh Champion Trophy", capLv: 160, timer: 75, baseHp: 2700000, reward: 600000, waves: [{ id: 212, title: "E4 Aaron's Scizor", lv: 155 }, { id: 450, title: "E4 Bertha's Hippowdon", lv: 156 }, { id: 392, title: "E4 Flint's Infernape", lv: 157 }, { id: 475, title: "E4 Lucian's Gallade", lv: 158 }, { id: 445, title: "Champion Cynthia's Garchomp", lv: 162, isBoss: true }] },
+
+      // --- UNOVA ---
+      { id: "u_g1", region: "unova", type: "gym", name: "Striaton Gym (Cilan/Chili/Cress)", badgeId: "trio", badgeName: "Trio Badge", capLv: 162, timer: 65, baseHp: 3900000, reward: 900000, waves: [{ id: 512, title: "Waiter's Simisage", lv: 159 }, { id: 512, title: "Leader's Simisage", lv: 161 }, { id: 512, title: "Gym Leader's Simisage (Ace)", lv: 162, isBoss: true }] },
+      { id: "u_g2", region: "unova", type: "gym", name: "Nacrene Gym (Lenora)", badgeId: "basic", badgeName: "Basic Badge", capLv: 166, timer: 65, baseHp: 4700000, reward: 1100000, waves: [{ id: 508, title: "Lenora's Herdier", lv: 163 }, { id: 508, title: "Lenora's Watchog", lv: 165 }, { id: 508, title: "Lenora's Watchog (Ace)", lv: 166, isBoss: true }] },
+      { id: "u_g3", region: "unova", type: "gym", name: "Castelia Gym (Burgh)", badgeId: "insect", badgeName: "Insect Badge", capLv: 170, timer: 65, baseHp: 5600000, reward: 1350000, waves: [{ id: 542, title: "Burgh's Whirlipede", lv: 167 }, { id: 542, title: "Burgh's Leavanny", lv: 169 }, { id: 542, title: "Burgh's Leavanny (Ace)", lv: 170, isBoss: true }] },
+      { id: "u_g4", region: "unova", type: "gym", name: "Nimbasa Gym (Elesa)", badgeId: "bolt", badgeName: "Bolt Badge", capLv: 174, timer: 70, baseHp: 6700000, reward: 1650000, waves: [{ id: 523, title: "Model's Blitzle", lv: 171 }, { id: 523, title: "Elesa's Zebstrika", lv: 173 }, { id: 523, title: "Elesa's Zebstrika (Ace)", lv: 174, isBoss: true }] },
+      { id: "u_g5", region: "unova", type: "gym", name: "Driftveil Gym (Clay)", badgeId: "quake", badgeName: "Quake Badge", capLv: 178, timer: 70, baseHp: 8000000, reward: 2000000, waves: [{ id: 529, title: "Worker's Drilbur", lv: 175 }, { id: 553, title: "Clay's Krookodile", lv: 177 }, { id: 530, title: "Clay's Excadrill (Ace)", lv: 178, isBoss: true }] },
+      { id: "u_g6", region: "unova", type: "gym", name: "Mistralton Gym (Skyla)", badgeId: "jet", badgeName: "Jet Badge", capLv: 183, timer: 70, baseHp: 9500000, reward: 2450000, waves: [{ id: 581, title: "Pilot's Ducklett", lv: 180 }, { id: 581, title: "Skyla's Swoobat", lv: 182 }, { id: 581, title: "Skyla's Swanna (Ace)", lv: 183, isBoss: true }] },
+      { id: "u_g7", region: "unova", type: "gym", name: "Icirrus Gym (Brycen)", badgeId: "freeze", badgeName: "Freeze Badge", capLv: 188, timer: 75, baseHp: 11500000, reward: 3000000, waves: [{ id: 614, title: "Cooltrainer's Cubchoo", lv: 185 }, { id: 614, title: "Brycen's Beartic", lv: 187 }, { id: 614, title: "Brycen's Beartic (Ace)", lv: 188, isBoss: true }] },
+      { id: "u_d1", region: "unova", type: "dungeon", name: "Dragonspiral Tower & Giant Chasm", timer: 75, minLv: 188, maxLv: 193, baseHp: 12600000, reward: 3350000, spawns: [607, 633, 636], rareFossils: [564, 566], rareMythicals: [494, 643, 644, 646, 647, 648, 649], boss: { id: 646, title: "Legendary Kyurem", lv: 194, hpMult: 4.5 } },
+      { id: "u_g8", region: "unova", type: "gym", name: "Opelucid Gym (Drayden)", badgeId: "legend", badgeName: "Legend Badge", capLv: 194, timer: 75, baseHp: 13800000, reward: 3750000, waves: [{ id: 610, title: "Veteran's Axew", lv: 191 }, { id: 611, title: "Drayden's Fraxure", lv: 193 }, { id: 612, title: "Drayden's Haxorus (Ace)", lv: 194, isBoss: true }] },
+      { id: "unova_league", region: "unova", type: "league", name: "Pokémon League (Unova E4 & Champion)", badgeId: "unova_champ", badgeName: "Unova Champion Trophy", capLv: 200, timer: 80, baseHp: 17500000, reward: 5000000, waves: [{ id: 609, title: "E4 Shauntal's Chandelure", lv: 195 }, { id: 534, title: "E4 Marshal's Conkeldurr", lv: 196 }, { id: 625, title: "E4 Grimsley's Bisharp", lv: 197 }, { id: 579, title: "E4 Caitlin's Reuniclus", lv: 198 }, { id: 612, title: "Champion Iris's Haxorus", lv: 202, isBoss: true }] },
+
+      // --- KALOS ---
+      { id: "kal_g1", region: "kalos", type: "gym", name: "Santalune Gym (Viola)", badgeId: "kalos_bug", badgeName: "Bug Badge", capLv: 204, timer: 65, baseHp: 22500000, reward: 6000000, waves: [{ id: 666, title: "Viola's Surskit", lv: 202 }, { id: 666, title: "Viola's Vivillon", lv: 203 }, { id: 666, title: "Viola's Vivillon (Ace)", lv: 204, isBoss: true }] },
+      { id: "kal_g2", region: "kalos", type: "gym", name: "Cyllage Gym (Grant)", badgeId: "kalos_cliff", badgeName: "Cliff Badge", capLv: 208, timer: 65, baseHp: 27000000, reward: 7200000, waves: [{ id: 699, title: "Grant's Amaura", lv: 206 }, { id: 697, title: "Grant's Tyrunt", lv: 207 }, { id: 697, title: "Grant's Tyrantrum (Ace)", lv: 208, isBoss: true }] },
+      { id: "kal_g3", region: "kalos", type: "gym", name: "Shalour Gym (Korrina)", badgeId: "kalos_rumble", badgeName: "Rumble Badge", capLv: 212, timer: 70, baseHp: 33000000, reward: 8800000, waves: [{ id: 675, title: "Korrina's Machoke", lv: 210 }, { id: 701, title: "Korrina's Hawlucha", lv: 211 }, { id: 448, title: "Korrina's Mega Lucario (Ace)", lv: 212, isBoss: true }] },
+      { id: "kal_g4", region: "kalos", type: "gym", name: "Coumarine Gym (Ramos)", badgeId: "kalos_plant", badgeName: "Plant Badge", capLv: 216, timer: 70, baseHp: 41000000, reward: 10500000, waves: [{ id: 673, title: "Ramos's Jumpluff", lv: 214 }, { id: 673, title: "Ramos's Weepinbell", lv: 215 }, { id: 673, title: "Ramos's Gogoat (Ace)", lv: 216, isBoss: true }] },
+      { id: "kal_g5", region: "kalos", type: "gym", name: "Lumiose Gym (Clemont)", badgeId: "kalos_voltage", badgeName: "Voltage Badge", capLv: 220, timer: 70, baseHp: 52000000, reward: 12800000, waves: [{ id: 82, title: "Clemont's Magneton", lv: 218 }, { id: 695, title: "Clemont's Emolga", lv: 219 }, { id: 695, title: "Clemont's Heliolisk (Ace)", lv: 220, isBoss: true }] },
+      { id: "kal_g6", region: "kalos", type: "gym", name: "Laverre Gym (Valerie)", badgeId: "kalos_fairy", badgeName: "Fairy Badge", capLv: 224, timer: 75, baseHp: 66000000, reward: 15500000, waves: [{ id: 700, title: "Valerie's Mawile", lv: 222 }, { id: 700, title: "Valerie's Mr. Mime", lv: 223 }, { id: 700, title: "Valerie's Sylveon (Ace)", lv: 224, isBoss: true }] },
+      { id: "kal_g7", region: "kalos", type: "gym", name: "Anistar Gym (Olympia)", badgeId: "kalos_psychic", badgeName: "Psychic Badge", capLv: 228, timer: 75, baseHp: 85000000, reward: 19000000, waves: [{ id: 678, title: "Olympia's Sigilyph", lv: 226 }, { id: 678, title: "Olympia's Slowking", lv: 227 }, { id: 678, title: "Olympia's Meowstic (Ace)", lv: 228, isBoss: true }] },
+      { id: "kal_d2", region: "kalos", type: "dungeon", name: "Team Flare HQ & Terminus Cave", timer: 75, minLv: 227, maxLv: 232, baseHp: 102000000, reward: 22500000, spawns: [679, 704, 714], rareFossils: [696, 698], rareMythicals: [716, 717, 718, 719, 720, 721], boss: { id: 716, title: "Legendary Xerneas", lv: 232, hpMult: 4.5 } },
+      { id: "kal_g8", region: "kalos", type: "gym", name: "Snowbelle Gym (Wulfric)", badgeId: "kalos_iceberg", badgeName: "Iceberg Badge", capLv: 233, timer: 75, baseHp: 122000000, reward: 27500000, waves: [{ id: 460, title: "Wulfric's Abomasnow", lv: 231 }, { id: 713, title: "Wulfric's Cryogonal", lv: 232 }, { id: 713, title: "Wulfric's Avalugg (Ace)", lv: 233, isBoss: true }] },
+      { id: "kalos_league", region: "kalos", type: "league", name: "Lumiose League (Kalos E4 & Champion)", badgeId: "kalos_champ", badgeName: "Kalos Champion Trophy", capLv: 240, timer: 85, baseHp: 165000000, reward: 40000000, waves: [{ id: 668, title: "E4 Malva's Pyroar", lv: 236 }, { id: 681, title: "E4 Wikstrom's Aegislash", lv: 237 }, { id: 693, title: "E4 Siebold's Clawitzer", lv: 238 }, { id: 715, title: "E4 Drasna's Noivern", lv: 239 }, { id: 282, title: "Champion Diantha's Mega Gardevoir", lv: 242, isBoss: true }] },
+
+      // --- ALOLA ---
+      { id: "alo_g1", region: "alola", type: "gym", name: "Verdant Cavern Trial (Ilima)", badgeId: "alola_normal", badgeName: "Normalium Z", capLv: 244, timer: 70, baseHp: 225000000, reward: 52000000, waves: [{ id: 735, title: "Trial Yungoos", lv: 242 }, { id: 735, title: "Ilima's Smeargle", lv: 243 }, { id: 735, title: "Totem Gumshoos (Ace)", lv: 244, isBoss: true }] },
+      { id: "alo_g2", region: "alola", type: "gym", name: "Melemele Grand Trial (Kahuna Hala)", badgeId: "alola_fight", badgeName: "Fightinium Z", capLv: 248, timer: 70, baseHp: 265000000, reward: 60000000, waves: [{ id: 66, title: "Hala's Mankey", lv: 246 }, { id: 297, title: "Hala's Makuhita", lv: 247 }, { id: 740, title: "Hala's Crabominable (Ace)", lv: 248, isBoss: true }] },
+      { id: "alo_g3", region: "alola", type: "gym", name: "Brooklet Hill Trial (Captain Lana)", badgeId: "alola_water", badgeName: "Waterium Z", capLv: 252, timer: 70, baseHp: 315000000, reward: 70000000, waves: [{ id: 752, title: "Lana's Dewpider", lv: 250 }, { id: 752, title: "Lana's Araquanid", lv: 251 }, { id: 746, title: "Totem Wishiwashi (Ace)", lv: 252, isBoss: true }] },
+      { id: "alo_g4", region: "alola", type: "gym", name: "Wela Volcano Trial (Captain Kiawe)", badgeId: "alola_fire", badgeName: "Firium Z", capLv: 256, timer: 75, baseHp: 375000000, reward: 82000000, waves: [{ id: 776, title: "Kiawe's Turtonator", lv: 254 }, { id: 758, title: "Kiawe's Marowak", lv: 255 }, { id: 758, title: "Totem Salazzle (Ace)", lv: 256, isBoss: true }] },
+      { id: "alo_g5", region: "alola", type: "gym", name: "Akala Grand Trial (Mallow & Olivia)", badgeId: "alola_rock", badgeName: "Rockium Z", capLv: 260, timer: 75, baseHp: 450000000, reward: 96000000, waves: [{ id: 754, title: "Totem Lurantis", lv: 258 }, { id: 299, title: "Olivia's Probopass", lv: 259 }, { id: 745, title: "Olivia's Lycanroc (Ace)", lv: 260, isBoss: true }] },
+      { id: "alo_g6", region: "alola", type: "gym", name: "Hokulani Observatory (Sophocles)", badgeId: "alola_elec", badgeName: "Electrium Z", capLv: 265, timer: 75, baseHp: 540000000, reward: 112000000, waves: [{ id: 777, title: "Sophocles's Togedemaru", lv: 263 }, { id: 738, title: "Totem Vikavolt", lv: 264 }, { id: 738, title: "Totem Vikavolt (Ace)", lv: 265, isBoss: true }] },
+      { id: "alo_g7", region: "alola", type: "gym", name: "Ula'ula Grand Trial (Acerola & Nanu)", badgeId: "alola_ghost", badgeName: "Ghostium Z", capLv: 270, timer: 80, baseHp: 650000000, reward: 132000000, waves: [{ id: 778, title: "Totem Mimikyu", lv: 268 }, { id: 768, title: "Guzma's Golisopod", lv: 269 }, { id: 197, title: "Kahuna Nanu's Ace", lv: 270, isBoss: true }] },
+      { id: "alo_d1", region: "alola", type: "dungeon", name: "Vast Poni Canyon & Ultra Space Wilds", timer: 80, minLv: 269, maxLv: 274, baseHp: 760000000, reward: 155000000, spawns: [759, 778, 782, 793], rareMythicals: [785, 791, 792, 800, 801, 802, 807, 808], boss: { id: 800, title: "Ultra Necrozma", lv: 275, hpMult: 4.8 } },
+      { id: "alo_g8", region: "alola", type: "gym", name: "Poni Grand Trial (Kahuna Hapu)", badgeId: "alola_ground", badgeName: "Groundium Z", capLv: 275, timer: 80, baseHp: 880000000, reward: 180000000, waves: [{ id: 760, title: "Hapu's Golurk", lv: 273 }, { id: 784, title: "Totem Kommo-o", lv: 274 }, { id: 750, title: "Hapu's Mudsdale (Ace)", lv: 275, isBoss: true }] },
+      { id: "alola_league", region: "alola", type: "league", name: "Mount Lanakila (Alola E4 & Champion)", badgeId: "alola_champ", badgeName: "Alola Champion Trophy", capLv: 280, timer: 85, baseHp: 1100000000, reward: 250000000, waves: [{ id: 740, title: "E4 Hala's Crabominable", lv: 276 }, { id: 745, title: "E4 Olivia's Lycanroc", lv: 277 }, { id: 778, title: "E4 Acerola's Mimikyu", lv: 278 }, { id: 733, title: "E4 Kahili's Toucannon", lv: 279 }, { id: 727, title: "Champion Kukui's Incineroar", lv: 282, isBoss: true }] },
+
+      // --- GALAR ---
+      { id: "gal_g1", region: "galar", type: "gym", name: "Turffield Stadium (Milo)", badgeId: "galar_grass", badgeName: "Galar Grass Badge", capLv: 284, timer: 75, baseHp: 1600000000, reward: 360000000, waves: [{ id: 830, title: "Milo's Gossifleur", lv: 282 }, { id: 830, title: "Milo's Eldegoss", lv: 283 }, { id: 830, title: "Milo's Dynamax Eldegoss (Ace)", lv: 284, isBoss: true }] },
+      { id: "gal_g2", region: "galar", type: "gym", name: "Hulbury Stadium (Nessa)", badgeId: "galar_water", badgeName: "Galar Water Badge", capLv: 288, timer: 75, baseHp: 1950000000, reward: 430000000, waves: [{ id: 195, title: "Nessa's Quagsire", lv: 286 }, { id: 768, title: "Nessa's Golisopod", lv: 287 }, { id: 834, title: "Nessa's Gigantamax Drednaw (Ace)", lv: 288, isBoss: true }] },
+      { id: "gal_g3", region: "galar", type: "gym", name: "Motostoke Stadium (Kabu)", badgeId: "galar_fire", badgeName: "Galar Fire Badge", capLv: 292, timer: 75, baseHp: 2400000000, reward: 520000000, waves: [{ id: 59, title: "Kabu's Arcanine", lv: 290 }, { id: 324, title: "Kabu's Torkoal", lv: 291 }, { id: 851, title: "Kabu's Gigantamax Centiskorch (Ace)", lv: 292, isBoss: true }] },
+      { id: "gal_d1", region: "galar", type: "dungeon", name: "Wild Area & Glimwood Tangle", timer: 80, minLv: 291, maxLv: 295, baseHp: 2850000000, reward: 610000000, spawns: [848, 856, 859, 885], rareFossils: [880, 882], rareMythicals: [891, 893], boss: { id: 887, title: "Boss Dragapult", lv: 296, hpMult: 4.5 } },
+      { id: "gal_g4", region: "galar", type: "gym", name: "Stow-on-Side Stadium (Bea)", badgeId: "galar_fight", badgeName: "Galar Fighting Badge", capLv: 296, timer: 80, baseHp: 3400000000, reward: 720000000, waves: [{ id: 701, title: "Bea's Hawlucha", lv: 294 }, { id: 675, title: "Bea's Pangoro", lv: 295 }, { id: 68, title: "Bea's Gigantamax Machamp (Ace)", lv: 296, isBoss: true }] },
+      { id: "gal_g5", region: "galar", type: "gym", name: "Ballonlea Stadium (Opal)", badgeId: "galar_fairy", badgeName: "Galar Fairy Badge", capLv: 300, timer: 80, baseHp: 4100000000, reward: 860000000, waves: [{ id: 110, title: "Opal's Galarian Weezing", lv: 298 }, { id: 858, title: "Opal's Hatterene", lv: 299 }, { id: 869, title: "Opal's Gigantamax Alcremie (Ace)", lv: 300, isBoss: true }] },
+      { id: "gal_g6", region: "galar", type: "gym", name: "Circhester Stadium (Gordie)", badgeId: "galar_rock", badgeName: "Galar Rock Badge", capLv: 305, timer: 80, baseHp: 5000000000, reward: 1050000000, waves: [{ id: 219, title: "Gordie's Shuckle", lv: 303 }, { id: 248, title: "Gordie's Tyranitar", lv: 304 }, { id: 839, title: "Gordie's Gigantamax Coalossal (Ace)", lv: 305, isBoss: true }] },
+      { id: "gal_g7", region: "galar", type: "gym", name: "Spikemuth Gym (Piers)", badgeId: "galar_dark", badgeName: "Galar Dark Badge", capLv: 310, timer: 80, baseHp: 6200000000, reward: 1300000000, waves: [{ id: 229, title: "Piers's Malamar", lv: 308 }, { id: 849, title: "Piers's Toxtricity", lv: 309 }, { id: 862, title: "Piers's Obstagoon (Ace)", lv: 310, isBoss: true }] },
+      { id: "gal_d2", region: "galar", type: "dungeon", name: "Energy Plant & Crown Tundra", timer: 85, minLv: 309, maxLv: 314, baseHp: 7500000000, reward: 1600000000, spawns: [878, 884, 885], rareMythicals: [888, 889, 890, 892, 898], boss: { id: 890, title: "Eternamax Eternatus", lv: 315, hpMult: 5.0 } },
+      { id: "gal_g8", region: "galar", type: "gym", name: "Hammerlocke Stadium (Raihan)", badgeId: "galar_dragon", badgeName: "Galar Dragon Badge", capLv: 315, timer: 85, baseHp: 9000000000, reward: 2000000000, waves: [{ id: 450, title: "Raihan's Hippowdon", lv: 313 }, { id: 706, title: "Raihan's Goodra", lv: 314 }, { id: 884, title: "Raihan's Gigantamax Duraludon (Ace)", lv: 315, isBoss: true }] },
+      { id: "galar_league", region: "galar", type: "league", name: "Wyndon Stadium (Galar Champion Cup)", badgeId: "galar_champ", badgeName: "Galar Champion Trophy", capLv: 320, timer: 90, baseHp: 11500000000, reward: 3000000000, waves: [{ id: 861, title: "Finalist Marnie's Grimmsnarl", lv: 316 }, { id: 832, title: "Finalist Hop's Dubwool", lv: 317 }, { id: 858, title: "Challenger Bede's Hatterene", lv: 318 }, { id: 884, title: "Leader Raihan's Duraludon", lv: 319 }, { id: 6, title: "Champion Leon's Gigantamax Charizard", lv: 322, isBoss: true }] }
+    ];
+
+    function buildAllRegionsAndRoutes() {
+      const specs = [
+        { reg: "kanto", prefix: "k_r", label: "Route", rStart: 1, rEnd: 28, pStart: 10, pEnd: 147, minLv: 2, maxLv: 52, startHp: 30, endHp: 8500, startGold: 10, endGold: 4500, starters: [1, 4, 7], fossils: [138, 140, 142], mythicals: [144, 145, 146, 150, 151] },
+        { reg: "johto", prefix: "j_r", label: "Route", rStart: 29, rEnd: 46, pStart: 161, pEnd: 246, minLv: 54, maxLv: 82, startHp: 12000, endHp: 68000, startGold: 4800, endGold: 22000, starters: [152, 155, 158], fossils: [], mythicals: [249, 250, 251] },
+        { reg: "hoenn", prefix: "h_r", label: "Route", rStart: 101, rEnd: 134, pStart: 261, pEnd: 374, minLv: 84, maxLv: 116, startHp: 90000, endHp: 460000, startGold: 32000, endGold: 110000, starters: [252, 255, 258], fossils: [345, 347], mythicals: [382, 383, 384, 385, 386] },
+        { reg: "sinnoh", prefix: "s_r", label: "Route", rStart: 201, rEnd: 230, pStart: 396, pEnd: 459, minLv: 118, maxLv: 155, startHp: 600000, endHp: 2350000, startGold: 145000, endGold: 500000, starters: [387, 390, 393], fossils: [408, 410], mythicals: [483, 484, 487, 490, 491, 492] },
+        { reg: "unova", prefix: "u_r", label: "Unova Route", rStart: 1, rEnd: 23, pStart: 504, pEnd: 636, minLv: 156, maxLv: 195, startHp: 3100000, endHp: 14500000, startGold: 720000, endGold: 3900000, starters: [495, 498, 501], fossils: [564, 566], mythicals: [494, 643, 644, 646, 647, 648, 649] },
+        { reg: "kalos", prefix: "kal_r", label: "Kalos Route", rStart: 1, rEnd: 22, pStart: 659, pEnd: 714, minLv: 198, maxLv: 235, startHp: 19000000, endHp: 135000000, startGold: 5000000, endGold: 30000000, starters: [650, 653, 656], fossils: [696, 698], mythicals: [716, 717, 718, 719, 720, 721] },
+        { reg: "alola", prefix: "alo_r", label: "Alola Route", rStart: 1, rEnd: 17, pStart: 731, pEnd: 782, minLv: 238, maxLv: 276, startHp: 190000000, endHp: 920000000, startGold: 45000000, endGold: 190000000, starters: [722, 725, 728], fossils: [], mythicals: [785, 791, 792, 793, 800, 801, 802, 807, 808] },
+        { reg: "galar", prefix: "gal_r", label: "Galar Route", rStart: 1, rEnd: 10, pStart: 819, pEnd: 885, minLv: 278, maxLv: 316, startHp: 1300000000, endHp: 9500000000, startGold: 300000000, endGold: 2200000000, starters: [810, 813, 816], fossils: [880, 882], mythicals: [888, 889, 890, 891, 892, 893, 898] }
+      ];
+
+      const fullList = [];
+
+      specs.forEach(s => {
+        const routeCount = s.rEnd - s.rStart + 1;
+        const excludedRareIds = new Set([...s.starters, ...s.fossils, ...s.mythicals]);
+
+        // Filter ALLE geëvolueerde vormen (Stage 2 & 3) uit de normale route-pool zodat je alleen basis-Pokémon (Stage 1) op vroege routes tegenkomt!
+        const baseStagePool = [];
+        for (let pid = s.pStart; pid <= s.pEnd; pid++) {
+          if (!STARTER_FAMILY_IDS.has(pid) && !excludedRareIds.has(pid) && !EVOLVED_POKEMON_IDS.has(pid)) {
+            baseStagePool.push(pid);
+          }
+        }
+
+        const regionMajors = BASE_MAJOR_AREAS.filter(a => a.region === s.reg);
+        const nonLeagueMajors = regionMajors.filter(a => a.type !== "league");
+        const leagueMajor = regionMajors.find(a => a.type === "league");
+
+        const routes = [];
+        for (let i = 0; i < routeCount; i++) {
+          const rNum = s.rStart + i;
+          const pct = routeCount > 1 ? i / (routeCount - 1) : 1;
+          const lv = Math.round(s.minLv + pct * (s.maxLv - s.minLv));
+          const hp = Math.round(s.startHp * Math.pow(s.endHp / s.startHp, pct));
+          const gold = Math.round(s.startGold * Math.pow(s.endGold / s.startGold, pct));
+
+          const startIdx = Math.floor((i * baseStagePool.length) / routeCount);
+          const endIdx = Math.max(startIdx + 2, Math.floor(((i + 1) * baseStagePool.length) / routeCount));
+          const spawns = baseStagePool.slice(startIdx, endIdx).slice(0, 4);
+          while (spawns.length < 2 && baseStagePool.length > 0) {
+            spawns.push(baseStagePool[(i + spawns.length) % baseStagePool.length]);
+          }
+
+          const rareStarters = (i < 6 || i % 5 === 0) ? [...s.starters] : [];
+          const rareFossils = (s.fossils.length > 0 && i >= 4 && i % 4 === 0) ? [...s.fossils] : [];
+          const rareMythicals = (i >= routeCount - 3) ? [...s.mythicals] : [];
+
+          routes.push({
+            id: `${s.prefix}${rNum}`,
+            region: s.reg,
+            type: "route",
+            name: `${s.label} ${rNum}`,
+            minLv: lv,
+            maxLv: lv + 2,
+            baseHp: hp,
+            reward: gold,
+            spawns: [...new Set(spawns)],
+            rareStarters: rareStarters,
+            rareFossils: rareFossils,
+            rareMythicals: rareMythicals
+          });
+        }
+
+        const step = Math.max(1, Math.floor(routes.length / (nonLeagueMajors.length + 1)));
+        let mIdx = 0;
+        routes.forEach((rt, idx) => {
+          fullList.push(rt);
+          if ((idx + 1) % step === 0 && mIdx < nonLeagueMajors.length) {
+            fullList.push(nonLeagueMajors[mIdx++]);
+          }
+        });
+        while (mIdx < nonLeagueMajors.length) {
+          fullList.push(nonLeagueMajors[mIdx++]);
+        }
+        if (leagueMajor) fullList.push(leagueMajor);
+      });
+
+      return fullList;
+    }
+
+    const AREAS = buildAllRegionsAndRoutes();
+
+    // ===================== 2b. BALANS (pas hier de moeilijkheid aan) =====================
+    // Idee: de HP van elk gebied wordt berekend uit wat een speler "op schema" daar aan DPS heeft,
+    // keer hoeveel Power Tonic hij op dat moment zou moeten hebben. Tonic stapelt (×1.06 per level),
+    // dus je DPS groeit net zo exponentieel als de vijanden — mits je goud grindt om Tonic te kopen.
+    const BALANCE = {
+      tonicDpsMult: 1.06,        // elke Power Tonic-level: ×1.06 team-DPS (stapelt)
+      tonicBaseCost: 100,
+      tonicCostGrowth: 1.09,     // kosten stijgen sneller dan de DPS → steeds meer grind
+      expBaseCost: 150,
+      expCostGrowth: 1.08,
+      tonicPerArea: 0.50,        // hoeveel Tonic-levels de vijanden per gebied "verwachten"
+      routeKillSec: 2.0,         // seconden per kill voor een speler die precies op schema ligt
+      killsPerTonic: [7, 150],    // kills per Tonic-level aan het begin → eind (grind loopt op)
+      gymPower: [1.35, 4.5],      // hoeveel zwaarder gyms/leagues zijn dan de routes (Kanto → Galar)
+      dungeonPower: [1.1, 1.8],  // idem voor dungeons
+      timerSlack: 0.85,          // deel van de timer dat een speler op de grens nodig heeft
+      xpKillsPerLevel: 5,        // kills op gelijk level om één level te stijgen
+      majorGoldMult: 2.5         // goud per kill in gyms/dungeons t.o.v. routes
+    };
+
+    function levelMult(level) { return 1 + (level - 1) * 0.22; }
+    function tonicMultFor(lvl) { return Math.pow(BALANCE.tonicDpsMult, lvl); }
+    function tonicCostFor(lvl) { return Math.round(BALANCE.tonicBaseCost * Math.pow(BALANCE.tonicCostGrowth, lvl)); }
+    function lerp(range, t) { return range[0] + (range[1] - range[0]) * t; }
+
+    // Verwachte basis-DPS van één teamlid (basisvormen vroeg, sterke finale vormen/legendaries laat)
+    function refBaseDps(level) { return Math.min(12 + level * 1.4, 40 + level * 0.16); }
+    // Verwachte teamgrootte: je begint met 1 starter en vangt er gaandeweg bij
+    function refTeamSize(idx) { return Math.min(6, 1 + idx * 0.35); }
+
+    function applyBalance(areas) {
+      const N = areas.length;
+      let badges = 0;
+      areas.forEach((area, idx) => {
+        // Level cap die geldt zolang je dit gebied speelt = cap van de eerstvolgende gym/league
+        let cap = 320;
+        for (let j = idx; j < N; j++) {
+          if (areas[j].capLv) { cap = areas[j].capLv; break; }
+        }
+        const t = idx / (N - 1);
+        const isMajor = area.type !== "route";
+        const refLevel = area.type === "route"
+          ? Math.min(cap, Math.max(5, area.maxLv + 3))
+          : area.capLv || Math.min(cap, area.maxLv + 3);
+        const tonicLvl = idx * BALANCE.tonicPerArea;
+        const refDps = refTeamSize(idx) * refBaseDps(refLevel) * levelMult(refLevel) * (1 + badges * 0.15) * tonicMultFor(tonicLvl);
+
+        const goldPerKill = Math.max(4, Math.round(tonicCostFor(tonicLvl) / lerp(BALANCE.killsPerTonic, t)));
+
+        if (area.type === "route") {
+          area.baseHp = Math.round(refDps * BALANCE.routeKillSec);
+          area.reward = goldPerKill;
+          area.reqDps = Math.round(refDps);
+        } else {
+          const power = area.type === "dungeon" ? lerp(BALANCE.dungeonPower, t) : lerp(BALANCE.gymPower, t);
+          const reqDps = refDps * power;
+          const weights = getWaveWeights(area);
+          const totalWeight = weights.reduce((s, w) => s + w, 0);
+          area.baseHp = Math.round(reqDps * area.timer * BALANCE.timerSlack / totalWeight);
+          area.reward = Math.round(goldPerKill * BALANCE.majorGoldMult);
+          area.reqDps = Math.round(reqDps);
+        }
+        if (area.type === "gym" || area.type === "league") badges++;
+      });
+    }
+
+    // HP-verhouding per golf: latere golven zwaarder, de boss/Ace het zwaarst
+    function getWaveWeights(area) {
+      if (area.waves) return area.waves.map((w, i) => w.isBoss ? 2.0 : 1 + i * 0.15);
+      return [1, 1.15, 1.3, 1.45, 2.5]; // dungeon: 4 wilde golven + boss
+    }
+
+    applyBalance(AREAS);
+
+    // ===================== 2c. WAAR KOM JE ELKE POKÉMON TEGEN? (voor de PokéDex) =====================
+    // Kansen volgen exact rollWildEncounter(): eerst 2% mythical, dan tot 7% fossiel, dan tot 13% starter, rest wild.
+    const ENCOUNTERS = {};
+    const PREVO = {};
+    (function buildEncounterIndex() {
+      const add = (id, area, kind, chance) => (ENCOUNTERS[id] ||= []).push({ areaId: area.id, kind, chance });
+      AREAS.forEach(area => {
+        if (area.type === "gym" || area.type === "league") return; // trainer-Pokémon kun je niet vangen
+        const myth = area.rareMythicals || [], fos = area.rareFossils || [], sta = area.rareStarters || [];
+        const pMyth = myth.length ? 0.02 : 0;
+        const pFos = fos.length ? 0.07 - pMyth : 0;
+        const pSta = sta.length ? 0.13 - pMyth - pFos : 0;
+        const pWild = 1 - pMyth - pFos - pSta;
+        // in een dungeon is de laatste golf altijd de boss, de andere golven zijn wild
+        const wildShare = area.type === "dungeon" ? (totalWavesFor(area) - 1) / totalWavesFor(area) : 1;
+        myth.forEach(id => add(id, area, "mythical", pMyth / myth.length * wildShare));
+        fos.forEach(id => add(id, area, "fossil", pFos / fos.length * wildShare));
+        sta.forEach(id => add(id, area, "starter", pSta / sta.length * wildShare));
+        const wild = [...new Set(area.spawns || [])];
+        wild.forEach(id => add(id, area, "wild", pWild / wild.length * wildShare));
+        if (area.boss) add(area.boss.id, area, "boss", 1);
+      });
+      for (const id in POKEMON_DB) {
+        const db = POKEMON_DB[id];
+        if (db.evolveTo && !PREVO[db.evolveTo]) PREVO[db.evolveTo] = { from: +id, level: db.evolveLevel };
+      }
+    })();
+    function totalWavesFor(area) { return area.waves ? area.waves.length : 5; }
+
+    // ===================== 3. GAME STATE & CLOUD SYNC =====================
+    const DEFAULT_FIREBASE_URL = "";
+    let currentDexGen = 1;
+
+    let state = {
+      starterChosen: false,
+      region: "kanto",
+      currentAreaId: "k_r1",
+      pokedollars: 150,
+      balls: { pokeball: 10, greatball: 2, ultraball: 0, masterball: 0 },
+      selectedBall: "pokeball",
+      shinyCharmTier: 0,
+      powerTonicLvl: 0,
+      expShareLvl: 0,
+      autoCatch: false,
+      badges: [],
+      clearedAreas: {},
+      routeKills: {},
+      visitedAreas: {},
+      seen: {},
+      pcPrefs: { sort: "dps", dir: -1, shinyOnly: false, favOnly: false },
+      team: [],
+      pc: [],
+      pokedex: [],
+      cloudUser: null,
+      firebaseUrl: DEFAULT_FIREBASE_URL
+    };
+
+    let currentEnemy = null;
+    let currentWave = 1;
+    let totalWaves = 5;
+    let dungeonTimeLeft = 0;
+    let dungeonMaxTime = 45;
+
+    function getCurrentCapInfo() {
+      for (const area of AREAS) {
+        if (area.type === "gym" || area.type === "league") {
+          if (!state.badges.includes(area.badgeId)) {
+            return { cap: area.capLv, leaderName: area.name };
+          }
+        }
+      }
+      return { cap: 320, leaderName: "Galar Monarch (All 8 Regions Conquered)" };
+    }
+
+    // Opslag die niet crasht als de browser localStorage blokkeert (ingesloten vensters, privé-modus)
+    function storageGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+    function storageSet(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+    function storageRemove(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+    function loadGame() {
+      // Geopend via de Fullscreen-knop in een nieuw tabblad? Dan is de save meegegeven en is die het nieuwst.
+      const saved = window.__INITIAL_SAVE__ || storageGet("pokemon_route_idle_v7");
+      if (saved) {
+        try { state = { ...state, ...JSON.parse(saved) }; } catch (e) { console.error(e); }
+      }
+      if (!AREAS.some(a => a.id === state.currentAreaId)) {
+        state.currentAreaId = "k_r1";
+      }
+      if (!state.firebaseUrl && DEFAULT_FIREBASE_URL) {
+        state.firebaseUrl = DEFAULT_FIREBASE_URL;
+      }
+      const urlInput = document.getElementById("firebaseUrlInput");
+      if (urlInput && state.firebaseUrl) urlInput.value = state.firebaseUrl;
+
+      if (state.cloudUser) {
+        document.getElementById("cloudUser").value = state.cloudUser;
+        document.getElementById("cloudStatus").textContent = `Logged in as: ${state.cloudUser}`;
+        document.getElementById("topCloudBtnText").textContent = state.cloudUser;
+      }
+      if (!state.starterChosen) {
+        document.getElementById("starterModal").classList.remove("hidden");
+      } else {
+        enterArea(state.currentAreaId);
+      }
+      updateAllUI();
+    }
+
+    function saveGame() {
+      storageSet("pokemon_route_idle_v7", JSON.stringify(state));
+      if (state.cloudUser) {
+        storageSet(`cloud_save_${state.cloudUser}`, JSON.stringify(state));
+      }
+    }
+
+    function resetSave() {
+      if (confirm("Are you sure you want to reset all progress?")) {
+        storageRemove("pokemon_route_idle_v7");
+        window.__INITIAL_SAVE__ = null;
+        location.reload();
+      }
+    }
+
+    function chooseStarter(id) {
+      state.starterChosen = true;
+      addPokemonToPlayer(id, 5, false);
+      document.getElementById("starterModal").classList.add("hidden");
+      addLog(`🎉 You chose ${POKEMON_DB[id].name} as your starter!`);
+      enterArea("k_r1");
+      saveGame();
+      updateAllUI();
+    }
+
+    function getActiveFirebaseUrl() {
+      const inputVal = (document.getElementById("firebaseUrlInput")?.value || "").trim().replace(/\/+$/, "");
+      if (inputVal) { state.firebaseUrl = inputVal; return inputVal; }
+      return (state.firebaseUrl || DEFAULT_FIREBASE_URL || "").trim().replace(/\/+$/, "");
+    }
+
+    async function cloudLogin() {
+      const rawUser = document.getElementById("cloudUser").value.trim();
+      const u = rawUser.toLowerCase().replace(/[^a-z0-9_]/g, "");
+      const p = document.getElementById("cloudPass").value.trim();
+      if (!u || !p) { alert("Please enter both a Trainer Username and a Password."); return; }
+
+      const dbUrl = getActiveFirebaseUrl();
+      if (dbUrl && dbUrl.startsWith("https://")) {
+        try {
+          document.getElementById("cloudStatus").textContent = "⏳ Connecting to Firebase Cloud Database...";
+          const res = await fetch(`${dbUrl}/trainers/${u}.json`);
+          if (!res.ok) throw new Error("Database HTTP Error");
+          const account = await res.json();
+
+          if (!account) {
+            state.cloudUser = u;
+            saveGame();
+            await fetch(`${dbUrl}/trainers/${u}.json`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ password: p, saveState: state, updatedAt: Date.now() })
+            });
+            document.getElementById("cloudStatus").textContent = `✅ Logged in (Firebase Cloud): ${u}`;
+            document.getElementById("topCloudBtnText").textContent = u;
+            document.getElementById("cloudModal").classList.add("hidden");
+            addLog(`☁️ New Firebase Cloud account '${u}' created!`);
+          } else if (account.password === p) {
+            state = { ...state, ...account.saveState, cloudUser: u, firebaseUrl: dbUrl };
+            saveGame();
+            enterArea(state.currentAreaId);
+            updateAllUI();
+            document.getElementById("cloudStatus").textContent = `✅ Logged in (Firebase Cloud): ${u}`;
+            document.getElementById("topCloudBtnText").textContent = u;
+            document.getElementById("cloudModal").classList.add("hidden");
+            addLog(`☁️ Welcome back, '${u}'! Cloud save loaded.`);
+          } else {
+            document.getElementById("cloudStatus").textContent = "❌ Wrong password!";
+            alert("❌ Wrong password!");
+          }
+          return;
+        } catch (err) {
+          alert("⚠️ Could not connect to Firebase. Logging you in locally.");
+        }
+      }
+
+      const existingLocal = storageGet(`cloud_save_${u}`);
+      if (existingLocal) {
+        state = { ...state, ...JSON.parse(existingLocal), cloudUser: u };
+        saveGame();
+        enterArea(state.currentAreaId);
+        updateAllUI();
+        addLog(`☁️ Local save for '${u}' loaded!`);
+      } else {
+        state.cloudUser = u;
+        saveGame();
+        addLog(`☁️ Profile '${u}' saved in this browser!`);
+      }
+      document.getElementById("cloudStatus").textContent = `Logged in (Browser): ${u}`;
+      document.getElementById("topCloudBtnText").textContent = u;
+      document.getElementById("cloudModal").classList.add("hidden");
+    }
+
+    async function cloudSyncNow(silent = false) {
+      if (!state.cloudUser) {
+        if (!silent) alert("Please log in with a username and password first.");
+        return;
+      }
+      saveGame();
+      const dbUrl = getActiveFirebaseUrl();
+      if (dbUrl && dbUrl.startsWith("https://")) {
+        try {
+          await fetch(`${dbUrl}/trainers/${state.cloudUser}/saveState.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(state)
+          });
+          if (!silent) {
+            document.getElementById("cloudStatus").textContent = `✅ Synced (${state.cloudUser})`;
+            addLog(`☁️ Progress uploaded to the cloud for '${state.cloudUser}'!`);
+          }
+        } catch (e) {
+          if (!silent) alert("⚠️ Error uploading to Firebase.");
+        }
+      } else if (!silent) {
+        addLog(`💾 Progress saved locally for '${state.cloudUser}'.`);
+      }
+    }
+
+    async function cloudLoadNow() { await cloudLogin(); }
+
+    function exportSaveCode() {
+      saveGame();
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      const box = document.getElementById("saveCodeBox");
+      box.value = encoded;
+      box.select();
+      document.execCommand("copy");
+      addLog("📋 Save Code generated and copied!");
+    }
+
+    function importSaveCode() {
+      const code = document.getElementById("saveCodeBox").value.trim();
+      if (!code) { alert("Paste a Save Code first!"); return; }
+      try {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
+        state = { ...state, ...decoded };
+        saveGame();
+        enterArea(state.currentAreaId);
+        updateAllUI();
+        document.getElementById("cloudModal").classList.add("hidden");
+        addLog("✅ Save Code loaded successfully!");
+      } catch (e) {
+        alert("❌ Invalid Save Code!");
+      }
+    }
+
+    setInterval(() => {
+      if (state.starterChosen && state.cloudUser) cloudSyncNow(true);
+    }, 15000);
+
+    // ===================== 4. POKÉMON & SEPARATE SHINY OWNERSHIP =====================
+    function hasFamilyVariant(lineId, isShiny) {
+      const key = `${lineId}_${isShiny ? 'shiny' : 'normal'}`;
+      return state.team.some(m => POKEMON_DB[m.id] && POKEMON_DB[m.id].lineId === lineId && m.isShiny === isShiny) ||
+             state.pc.some(m => POKEMON_DB[m.id] && POKEMON_DB[m.id].lineId === lineId && m.isShiny === isShiny) ||
+             state.pokedex.includes(key);
+    }
+
+    function addPokemonToPlayer(id, level, isShiny) {
+      const cap = getCurrentCapInfo().cap;
+      const db = POKEMON_DB[id];
+      if (!db) return;
+      const key = `${db.lineId}_${isShiny ? 'shiny' : 'normal'}`;
+      if (!state.pokedex.includes(key)) state.pokedex.push(key);
+      const mon = { uid: Date.now() + Math.random(), id, level: Math.min(level, cap), xp: 0, isShiny };
+      markSeen(id);
+      if (state.team.length < 6) state.team.push(mon);
+      else state.pc.push(mon);
+    }
+
+    function getPokemonDps(mon) {
+      const db = POKEMON_DB[mon.id];
+      if (!db) return 10;
+      const shinyMult = mon.isShiny ? 1.75 : 1.0;
+      const badgeBonusMult = 1 + (state.badges.length * 0.15);
+      const tonicMult = tonicMultFor(state.powerTonicLvl);
+      return Math.round(db.baseDps * levelMult(mon.level) * shinyMult * badgeBonusMult * tonicMult);
+    }
+
+    function getTeamDps() { return state.team.reduce((sum, m) => sum + getPokemonDps(m), 0); }
+    function getBadgeBonusPct() { return state.badges.length * 15; }
+    function getXpNeeded(level) { return Math.floor(25 * Math.pow(level, 1.35)); }
+
+    function giveTeamXp(amount) {
+      const cap = getCurrentCapInfo().cap;
+      const finalXp = Math.round(amount * (1 + (state.expShareLvl * 0.10)));
+      let changed = false;
+
+      state.team.forEach(mon => {
+        if (mon.level >= cap) { mon.level = cap; mon.xp = 0; return; }
+        const enemyDb = currentEnemy ? POKEMON_DB[currentEnemy.id] : null;
+        const teamDb = POKEMON_DB[mon.id];
+        const famBonus = (enemyDb && teamDb && enemyDb.lineId === teamDb.lineId) ? 1.25 : 1.0;
+
+        mon.xp += Math.round(finalXp * famBonus);
+        while (mon.level < cap && mon.xp >= getXpNeeded(mon.level)) {
+          mon.xp -= getXpNeeded(mon.level);
+          mon.level++;
+          changed = true;
+          const db = POKEMON_DB[mon.id];
+          if (db && db.evolveLevel && mon.level >= db.evolveLevel && db.evolveTo && POKEMON_DB[db.evolveTo]) {
+            const oldName = db.name;
+            mon.id = db.evolveTo;
+            markSeen(mon.id);
+            const newKey = `${POKEMON_DB[mon.id].lineId}_${mon.isShiny ? 'shiny' : 'normal'}`;
+            if (!state.pokedex.includes(newKey)) state.pokedex.push(newKey);
+            addLog(`✨ What?! Your ${oldName} evolved into ${POKEMON_DB[mon.id].name}!`);
+          }
+        }
+        if (mon.level >= cap) mon.xp = 0;
+      });
+      if (changed) renderTeam();
+    }
+
+    function getTonicCost() { return tonicCostFor(state.powerTonicLvl); }
+    function getExpShareCost() { return Math.round(BALANCE.expBaseCost * Math.pow(BALANCE.expCostGrowth, state.expShareLvl)); }
+    function getKillXp(enemy) { return Math.max(5, Math.round(getXpNeeded(enemy.level) / BALANCE.xpKillsPerLevel * (enemy.isBoss ? 3 : 1))); }
+
+    function buyUpgrade(type) {
+      if (type === 'powerTonic') {
+        const cost = getTonicCost();
+        if (state.pokedollars < cost) { addLog("❌ Not enough PokéDollars!"); return; }
+        state.pokedollars -= cost;
+        state.powerTonicLvl++;
+        addLog(`💪 Power Tonic upgraded to Lv. ${state.powerTonicLvl}! (×${tonicMultFor(state.powerTonicLvl).toLocaleString("en-US", { maximumFractionDigits: 1 })} Team DPS)`);
+      } else if (type === 'expShare') {
+        const cost = getExpShareCost();
+        if (state.pokedollars < cost) { addLog("❌ Not enough PokéDollars!"); return; }
+        state.pokedollars -= cost;
+        state.expShareLvl++;
+        addLog(`📘 Exp. Share+ upgraded to Lv. ${state.expShareLvl}! (+${state.expShareLvl * 10}% Team XP)`);
+      }
+      updateAllUI();
+      saveGame();
+    }
+
+    // ===================== 5. AREAS & RARE ENCOUNTER ROLLS =====================
+    function markSeen(id) { (state.seen ||= {})[id] = true; }
+    function getArea(areaId) { return AREAS.find(a => a.id === areaId) || AREAS[0]; }
+
+    function isAreaUnlocked(index) {
+      if (index === 0) return true;
+      const prevArea = AREAS[index - 1];
+      if (prevArea.type === "route") return (state.routeKills[prevArea.id] || 0) >= 10;
+      return !!state.clearedAreas[prevArea.id];
+    }
+
+    function enterArea(areaId) {
+      const area = getArea(areaId);
+      state.currentAreaId = area.id;
+      (state.visitedAreas ||= {})[area.id] = true;
+      currentWave = 1;
+      if (area.type === "dungeon" || area.type === "league" || area.type === "gym") {
+        totalWaves = area.waves ? area.waves.length : 5;
+        dungeonMaxTime = area.timer || 60;
+        dungeonTimeLeft = area.timer || 60;
+      }
+      spawnEnemy();
+      updateAllUI();
+    }
+
+    function restartDungeon() { enterArea(state.currentAreaId); addLog(`🔄 Wave 1 restarted!`); }
+
+    function rollWildEncounter(area) {
+      const roll = Math.random();
+      if (area.rareMythicals && area.rareMythicals.length > 0 && roll < 0.02) {
+        const id = area.rareMythicals[Math.floor(Math.random() * area.rareMythicals.length)];
+        return { id, rarityLabel: "🔮 Mythical / Legendary (2%)" };
+      }
+      if (area.rareFossils && area.rareFossils.length > 0 && roll < 0.07) {
+        const id = area.rareFossils[Math.floor(Math.random() * area.rareFossils.length)];
+        return { id, rarityLabel: "🪨 Rare Fossil (5%)" };
+      }
+      if (area.rareStarters && area.rareStarters.length > 0 && roll < 0.13) {
+        const id = area.rareStarters[Math.floor(Math.random() * area.rareStarters.length)];
+        return { id, rarityLabel: "⭐ Rare Starter (6%)" };
+      }
+      const id = area.spawns[Math.floor(Math.random() * area.spawns.length)];
+      return { id, rarityLabel: null };
+    }
+
+    function spawnEnemy() {
+      const area = getArea(state.currentAreaId);
+      const shinyDenom = state.shinyCharmTier === 1 ? 4096 : state.shinyCharmTier === 2 ? 2730 : state.shinyCharmTier >= 3 ? 1365 : 8192;
+      const isShiny = Math.floor(Math.random() * shinyDenom) === 0;
+
+      if (area.type === "route") {
+        const picked = rollWildEncounter(area);
+        const lv = Math.floor(Math.random() * (area.maxLv - area.minLv + 1)) + area.minLv;
+        const baseHp = Math.round(area.baseHp * (1 + (lv - area.minLv) * 0.05));
+        currentEnemy = { id: picked.id, name: POKEMON_DB[picked.id].name, level: lv, maxHp: baseHp, hp: baseHp, isShiny, isBoss: false, canCatch: true, rarityLabel: picked.rarityLabel };
+      } else if (area.type === "dungeon") {
+        if (currentWave === totalWaves && area.boss) {
+          const bossHp = Math.round(area.baseHp * getWaveWeights(area)[totalWaves - 1]);
+          currentEnemy = { id: area.boss.id, name: area.boss.title, level: area.boss.lv, maxHp: bossHp, hp: bossHp, isShiny, isBoss: true, canCatch: true, rarityLabel: "🔥 Dungeon Boss" };
+        } else {
+          const picked = rollWildEncounter(area);
+          const lv = Math.floor(Math.random() * (area.maxLv - area.minLv + 1)) + area.minLv;
+          const waveHp = Math.round(area.baseHp * getWaveWeights(area)[currentWave - 1]);
+          currentEnemy = { id: picked.id, name: POKEMON_DB[picked.id].name, level: lv, maxHp: waveHp, hp: waveHp, isShiny, isBoss: false, canCatch: true, rarityLabel: picked.rarityLabel };
+        }
+      } else {
+        const w = area.waves[currentWave - 1] || area.waves[0];
+        const waveHp = Math.round(area.baseHp * getWaveWeights(area)[currentWave - 1]);
+        currentEnemy = { id: w.id, name: w.title, level: w.lv, maxHp: waveHp, hp: waveHp, isShiny: false, isBoss: !!w.isBoss, canCatch: false, rarityLabel: w.isBoss ? "👑 Leader Ace" : null };
+      }
+
+      markSeen(currentEnemy.id);
+      if (currentEnemy.rarityLabel && currentEnemy.canCatch) {
+        addLog(`${currentEnemy.rarityLabel}: A wild <strong>${currentEnemy.name}</strong> appeared!`);
+      }
+      if (currentEnemy.isShiny) addLog(`🌟 SHINY ALERT! A Shiny ${currentEnemy.name} appeared!`);
+      renderArena();
+    }
+
+    function damageEnemy(dmg) {
+      if (!currentEnemy) return;
+      currentEnemy.hp = Math.max(0, currentEnemy.hp - dmg);
+      updateEnemyHpUI();
+      if (currentEnemy.hp <= 0) handleEnemyDefeated();
+    }
+
+    function handleEnemyDefeated() {
+      const area = getArea(state.currentAreaId);
+      const earnedGold = area.reward;
+      state.pokedollars += earnedGold;
+      giveTeamXp(getKillXp(currentEnemy));
+
+      if (state.autoCatch && currentEnemy.canCatch) {
+        const db = POKEMON_DB[currentEnemy.id];
+        if (db && !hasFamilyVariant(db.lineId, currentEnemy.isShiny)) attemptCatch(true);
+      }
+
+      if (area.type === "route") {
+        state.routeKills[area.id] = (state.routeKills[area.id] || 0) + 1;
+        if (state.routeKills[area.id] === 10) {
+          addLog(`✅ ${area.name} cleared! Next area unlocked.`);
+          renderAreaList();
+        }
+        spawnEnemy();
+      } else {
+        if (currentWave < totalWaves) {
+          currentWave++;
+          spawnEnemy();
+        } else {
+          state.clearedAreas[area.id] = true;
+          if (area.badgeId && !state.badges.includes(area.badgeId)) {
+            state.badges.push(area.badgeId);
+            const newCap = getCurrentCapInfo();
+            addLog(`🏅 ${area.badgeName} earned! Level Cap is now Lv. ${newCap.cap}!`);
+            cloudSyncNow(true);
+          } else {
+            addLog(`🏆 ${area.name} completed! +₽${earnedGold.toLocaleString()}`);
+          }
+          currentWave = 1;
+          dungeonTimeLeft = area.timer || 60;
+          renderAreaList();
+          spawnEnemy();
+        }
+      }
+      updateAllUI();
+      saveGame();
+    }
+
+    function selectBall(type) { state.selectedBall = type; updateBallButtons(); }
+
+    function attemptCatch(isAuto = false) {
+      if (!currentEnemy || !currentEnemy.canCatch) return;
+      const ball = state.selectedBall;
+      if (state.balls[ball] <= 0) {
+        if (!isAuto) addLog(`❌ Out of ${ball}s!`);
+        return;
+      }
+      const db = POKEMON_DB[currentEnemy.id];
+      if (db && hasFamilyVariant(db.lineId, currentEnemy.isShiny)) {
+        if (!isAuto) addLog(`ℹ️ You already own the ${currentEnemy.isShiny ? "Shiny" : "Normal"} family of ${db.name}!`);
+        return;
+      }
+
+      state.balls[ball]--;
+      const chance = Math.min(1, 0.35 * (1 - (currentEnemy.hp / currentEnemy.maxHp) * 0.65) * (ball === "masterball" ? 999 : ball === "ultraball" ? 2.0 : ball === "greatball" ? 1.5 : 1.0));
+      if (Math.random() <= chance) {
+        addPokemonToPlayer(currentEnemy.id, currentEnemy.level, currentEnemy.isShiny);
+        addLog(`🎯 Gotcha! Caught ${currentEnemy.isShiny ? "✨ SHINY " : ""}${db.name} (Lv. ${currentEnemy.level})!`);
+        cloudSyncNow(true);
+        if (!isAuto) spawnEnemy();
+      } else if (!isAuto) {
+        addLog(`💨 ${currentEnemy.name} broke free!`);
+      }
+      updateAllUI();
+      saveGame();
+    }
+
+    function buyBall(type, cost) {
+      if (state.pokedollars < cost) { addLog("❌ Not enough PokéDollars!"); return; }
+      state.pokedollars -= cost;
+      state.balls[type]++;
+      updateAllUI();
+    }
+
+    function buyShinyCharm() {
+      if (state.shinyCharmTier >= 3) return;
+      const costs = [100000, 350000, 1000000];
+      if (state.pokedollars < costs[state.shinyCharmTier]) { addLog("❌ Not enough PokéDollars!"); return; }
+      state.pokedollars -= costs[state.shinyCharmTier];
+      state.shinyCharmTier++;
+      addLog(`✨ Shiny Charm upgraded to Tier ${state.shinyCharmTier}!`);
+      updateAllUI();
+      saveGame();
+    }
+
+    function toggleAutoCatch() { state.autoCatch = document.getElementById("autoCatchToggle").checked; }
+
+    // ===================== 6. DRAG & DROP =====================
+    function allowDrop(ev) { ev.preventDefault(); }
+    function dragStart(ev, uid, fromPc) { ev.dataTransfer.setData("text/plain", JSON.stringify({ uid, fromPc })); }
+
+    function dropOnTeam(ev) {
+      ev.preventDefault();
+      const raw = ev.dataTransfer.getData("text/plain");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.fromPc) {
+        const idx = state.pc.findIndex(m => m.uid === data.uid);
+        if (idx > -1) {
+          const [mon] = state.pc.splice(idx, 1);
+          if (state.team.length < 6) state.team.push(mon);
+          else { const old = state.team.pop(); state.team.push(mon); state.pc.push(old); }
+          updateAllUI(); saveGame();
+        }
+      } else {
+        const oldIdx = state.team.findIndex(m => m.uid === data.uid);
+        const targetCard = ev.target.closest('[data-uid]');
+        if (oldIdx > -1 && targetCard) {
+          const targetUid = parseFloat(targetCard.getAttribute('data-uid'));
+          const newIdx = state.team.findIndex(m => m.uid === targetUid);
+          if (newIdx > -1 && oldIdx !== newIdx) {
+            const [mon] = state.team.splice(oldIdx, 1);
+            state.team.splice(newIdx, 0, mon);
+            updateAllUI(); saveGame();
+          }
+        }
+      }
+    }
+
+    function dropOnPc(ev) {
+      ev.preventDefault();
+      const raw = ev.dataTransfer.getData("text/plain");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (!data.fromPc) {
+        if (state.team.length <= 1) { addLog("⚠️ Keep at least 1 Pokémon in your Active Party!"); return; }
+        const idx = state.team.findIndex(m => m.uid === data.uid);
+        if (idx > -1) {
+          const [mon] = state.team.splice(idx, 1);
+          state.pc.push(mon); updateAllUI(); saveGame();
+        }
+      }
+    }
+
+    function switchRegion(reg) {
+      const regionLocks = { johto: "k_league", hoenn: "johto_league", sinnoh: "hoenn_league", unova: "sinnoh_league", kalos: "unova_league", alola: "kalos_league", galar: "alola_league" };
+      if (reg !== "kanto" && !state.clearedAreas[regionLocks[reg]]) {
+        addLog(`🔒 Defeat the previous region's Champion League to unlock ${reg.toUpperCase()}!`);
+        return;
+      }
+      state.region = reg;
+      const first = AREAS.find(a => a.region === reg);
+      if (first) enterArea(first.id);
+      updateAllUI();
+    }
+
+    // ===================== 7. POKÉDEX (ALL 898) & UI RENDERING =====================
+    function openPokedex() {
+      document.getElementById("pokedexModal").classList.remove("hidden");
+      renderPokedex();
+    }
+
+    function setDexGen(gen) {
+      currentDexGen = gen;
+      for (let g = 1; g <= 8; g++) {
+        const btn = document.getElementById(`dexTab-${g}`);
+        if (btn) {
+          btn.className = g === gen
+            ? "px-2.5 py-1 rounded text-xs font-bold bg-amber-500 text-slate-950"
+            : "px-2.5 py-1 rounded text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700";
+        }
+      }
+      renderPokedex();
+    }
+
+    let selectedDexId = null;
+    const ENC_LABELS = {
+      wild: { text: "Wild", style: "border-slate-600 text-slate-300" },
+      starter: { text: "⭐ Rare starter", style: "border-amber-500/60 text-amber-300" },
+      fossil: { text: "🪨 Fossil", style: "border-stone-400/60 text-stone-300" },
+      mythical: { text: "🔮 Legendary", style: "border-purple-500/60 text-purple-300" },
+      boss: { text: "🔥 Dungeon boss", style: "border-red-500/60 text-red-300" }
+    };
+
+    function formatChance(c) {
+      if (c >= 0.995) return "always";
+      const pct = c * 100;
+      return pct >= 10 ? `${Math.round(pct)}%` : pct >= 1 ? `${pct.toFixed(1)}%` : `${pct.toFixed(2)}%`;
+    }
+
+    // Korte hint onder elk vakje: eerste plek, of uit welke Pokémon hij evolueert
+    function dexLocationHint(id) {
+      const enc = (ENCOUNTERS[id] || []).filter(e => isVisited(e.areaId));
+      if (enc.length) {
+        const first = getArea(enc[0].areaId);
+        return `📍 ${first.name}${enc.length > 1 ? ` +${enc.length - 1}` : ""}`;
+      }
+      if (ENCOUNTERS[id]) return "📍 ???";
+      if (PREVO[id]) return `🧬 Evolution`;
+      return "— not in game";
+    }
+
+    // Zoek de eerste vorm in de evolutielijn die je ergens kunt vangen
+    function findCatchableAncestor(id) {
+      let cur = id;
+      const chain = [];
+      while (PREVO[cur]) {
+        chain.unshift({ from: PREVO[cur].from, to: cur, level: PREVO[cur].level });
+        cur = PREVO[cur].from;
+        if (ENCOUNTERS[cur]) return { baseId: cur, chain };
+      }
+      return null;
+    }
+
+    // Bezocht = je bent er geweest (ook oude saves: gebieden waar je al vocht of die je uitspeelde)
+    function isVisited(areaId) {
+      return !!((state.visitedAreas && state.visitedAreas[areaId]) || state.routeKills[areaId] || state.clearedAreas[areaId]);
+    }
+
+    // Gezien = je bent hem tegengekomen (wild, als boss of in een gym) of je hebt hem in je team/PC
+    function isSeen(id) {
+      return !!((state.seen && state.seen[id]) || state.team.some(m => m.id === id) || state.pc.some(m => m.id === id));
+    }
+    function dexName(id) { return isSeen(id) ? POKEMON_DB[id].name : "???"; }
+
+    function selectDexEntry(id) {
+      selectedDexId = selectedDexId === id ? null : id;
+      renderPokedex();
+      if (!selectedDexId) document.getElementById("dexDetail").classList.add("hidden");
+    }
+
+    function goToArea(areaId) {
+      const idx = AREAS.findIndex(a => a.id === areaId);
+      if (idx < 0 || !isAreaUnlocked(idx)) return;
+      state.region = AREAS[idx].region;
+      enterArea(areaId);
+      document.getElementById("pokedexModal").classList.add("hidden");
+      addLog(`🗺️ Travelled to ${AREAS[idx].name}.`);
+      saveGame();
+    }
+
+    function renderDexDetail(id) {
+      const box = document.getElementById("dexDetail");
+      const db = POKEMON_DB[id];
+      if (!db) { box.classList.add("hidden"); return; }
+      box.classList.remove("hidden");
+
+      const lines = [];
+      const evoTo = db.evolveTo && POKEMON_DB[db.evolveTo]
+        ? `Evolves into <strong>${dexName(db.evolveTo)}</strong> at Lv. ${db.evolveLevel}.` : "";
+      const prevo = PREVO[id] ? `Evolves from <strong>${dexName(PREVO[id].from)}</strong> at Lv. ${PREVO[id].level}.` : "";
+
+      const allEnc = (ENCOUNTERS[id] || []).slice().sort((a, b) =>
+        AREAS.findIndex(x => x.id === a.areaId) - AREAS.findIndex(x => x.id === b.areaId));
+      const enc = allEnc.filter(e => isVisited(e.areaId));
+      const unknownCount = allEnc.length - enc.length;
+      const unknownLine = unknownCount > 0
+        ? `<div class="text-xs text-slate-400 bg-slate-900 border border-dashed border-slate-700 rounded-lg p-2">🔒 ${unknownCount} more unknown location${unknownCount > 1 ? "s" : ""}. Explore new areas to reveal ${unknownCount > 1 ? "them" : "it"}.</div>`
+        : "";
+
+      if (allEnc.length) {
+        enc.forEach(e => {
+          const area = getArea(e.areaId);
+          const idx = AREAS.findIndex(a => a.id === e.areaId);
+          const unlocked = isAreaUnlocked(idx);
+          const label = ENC_LABELS[e.kind];
+          const regionName = area.region.charAt(0).toUpperCase() + area.region.slice(1);
+          lines.push(`
+            <div class="flex items-center justify-between gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 ${unlocked ? "" : "opacity-50"}">
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-white truncate">${area.name}</div>
+                <div class="text-[10px] text-slate-400">${regionName} • ${area.type === "route" ? `Lv. ${area.minLv}-${area.maxLv}` : area.type === "dungeon" ? (e.kind === "boss" ? `Lv. ${area.boss.lv} (final wave)` : `Lv. ${area.minLv}-${area.maxLv}`) : ""}</div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-[10px] px-1.5 py-0.5 rounded border ${label.style}">${label.text}</span>
+                <span class="text-[11px] font-mono font-bold text-emerald-300 w-12 text-right" title="Chance per encounter">${formatChance(e.chance)}</span>
+                ${unlocked
+                  ? `<button onclick="goToArea('${area.id}')" class="text-[10px] font-bold bg-sky-700 hover:bg-sky-600 text-white px-2 py-0.5 rounded">Go there</button>`
+                  : `<span class="text-[10px] text-slate-500 w-[52px] text-center">🔒</span>`}
+              </div>
+            </div>`);
+        });
+        if (unknownLine) lines.push(unknownLine);
+      } else {
+        const anc = findCatchableAncestor(id);
+        if (anc) {
+          const steps = anc.chain.map(c => `${dexName(c.from)} → ${dexName(c.to)} (Lv. ${c.level})`).join(", ");
+          lines.push(`<div class="text-xs text-slate-300 bg-slate-900 border border-slate-800 rounded-lg p-2">Not found in the wild. Catch <button onclick="selectDexEntry(${anc.baseId})" class="font-bold text-sky-300 underline">${dexName(anc.baseId)}</button> and evolve it: ${steps}.</div>`);
+        } else {
+          lines.push(`<div class="text-xs text-slate-400 bg-slate-900 border border-slate-800 rounded-lg p-2">This Pokémon does not appear anywhere in the game (yet).</div>`);
+        }
+      }
+
+      const hasNorm = state.pokedex.includes(`${db.lineId}_normal`) && isSeen(id);
+      const hasShiny = state.pokedex.includes(`${db.lineId}_shiny`) && isSeen(id);
+      box.innerHTML = `
+        <div class="flex items-start gap-3 mb-2">
+          <img src="${spriteSrc(id, false)}" class="w-16 h-16 pixelated ${hasNorm ? "" : "brightness-0 opacity-30"}" />
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-sm font-extrabold text-white">#${id} ${dexName(id)}</h3>
+              <button onclick="selectDexEntry(${id})" class="text-[11px] text-slate-400 hover:text-white">Close ✕</button>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">Base DPS ${db.baseDps} • ${hasNorm ? "✔ Normal caught" : "Normal: not yet"} • ${hasShiny ? "✨ Shiny caught" : "Shiny: not yet"}</div>
+            <div class="text-[11px] text-slate-300 mt-1">${[prevo, evoTo].filter(Boolean).join(" ")}</div>
+          </div>
+        </div>
+        <div class="text-[11px] font-bold text-yellow-400 mb-1.5">📍 Where to find ${enc.length ? `(${enc.length} known location${enc.length > 1 ? "s" : ""}, chance per encounter)` : ""}</div>
+        <div class="space-y-1.5">${lines.join("")}</div>`;
+    }
+
+    function renderPokedex() {
+      const grid = document.getElementById("pokedexGrid");
+      const query = (document.getElementById("dexSearchInput")?.value || "").trim().toLowerCase();
+      document.getElementById("pokedexStatsText").textContent = `Registered Family Variants: ${state.pokedex.length} / 1796`;
+
+      const ranges = {
+        1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493],
+        5: [494, 649], 6: [650, 721], 7: [722, 809], 8: [810, 898]
+      };
+      const [startId, endId] = ranges[currentDexGen] || [1, 151];
+
+      const html = [];
+      for (let id = 1; id <= 898; id++) {
+        const db = POKEMON_DB[id];
+        if (!db) continue;
+        if (query) {
+          if (!(isSeen(id) && db.name.toLowerCase().includes(query)) && !String(id).includes(query)) continue;
+        } else if (id < startId || id > endId) {
+          continue;
+        }
+
+        // De Pokédex registreert per evolutielijn; het plaatje kleurt pas in als je deze vorm ook gezien hebt
+        const hasNorm = state.pokedex.includes(`${db.lineId}_normal`) && isSeen(id);
+        const hasShiny = state.pokedex.includes(`${db.lineId}_shiny`) && isSeen(id);
+        html.push(`
+          <div onclick="selectDexEntry(${id})" class="cursor-pointer hover:bg-slate-800 bg-slate-950 border ${selectedDexId === id ? 'border-sky-400 ring-1 ring-sky-400' : hasNorm || hasShiny ? 'border-yellow-500/50' : 'border-slate-800'} rounded-xl p-2 flex flex-col items-center justify-between">
+            <span class="text-[10px] text-slate-500 font-mono">#${id}</span>
+            <div class="flex gap-1 my-1">
+              <img loading="lazy" src="${spriteSrc(id, false)}" class="w-12 h-12 pixelated ${hasNorm ? '' : 'brightness-0 opacity-20'}" />
+              <img loading="lazy" src="${spriteSrc(id, true)}" class="w-12 h-12 pixelated ${hasShiny ? 'shiny-glow' : 'brightness-0 opacity-20'}" />
+            </div>
+            <span class="text-[11px] font-bold ${isSeen(id) ? "text-white" : "text-slate-500"} text-center truncate w-full">${dexName(id)}</span>
+            <span class="text-[9px] text-slate-400 text-center truncate w-full">${dexLocationHint(id)}</span>
+          </div>
+        `);
+      }
+      grid.innerHTML = html.join("");
+      if (selectedDexId) renderDexDetail(selectedDexId);
+    }
+
+    function addLog(msg) {
+      const box = document.getElementById("battleLog");
+      const line = document.createElement("div");
+      line.innerHTML = msg;
+      box.prepend(line);
+      while (box.children.length > 30) box.removeChild(box.lastChild);
+    }
+
+    function updateEnemyHpUI() {
+      if (!currentEnemy) return;
+      document.getElementById("enemyHpText").textContent = `${Math.ceil(currentEnemy.hp).toLocaleString()} / ${currentEnemy.maxHp.toLocaleString()}`;
+      document.getElementById("enemyHpBar").style.width = `${Math.max(0, Math.min(100, (currentEnemy.hp / currentEnemy.maxHp) * 100))}%`;
+    }
+
+    function renderArena() {
+      if (!currentEnemy) return;
+      const area = getArea(state.currentAreaId);
+      document.getElementById("currentAreaName").textContent = area.name;
+
+      const typeBadge = document.getElementById("areaTypeBadge");
+      const waveBox = document.getElementById("dungeonWaveBox");
+      const routeBox = document.getElementById("routeProgressBox");
+
+      if (area.type === "route") {
+        typeBadge.textContent = "ROUTE";
+        typeBadge.className = "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-600 text-white";
+        document.getElementById("areaSubInfo").textContent = "Defeat 10 Pokémon to unlock next area";
+        waveBox.classList.add("hidden");
+        routeBox.classList.remove("hidden");
+        const kills = state.routeKills[area.id] || 0;
+        document.getElementById("routeKillsText").textContent = `${kills} / 10`;
+        document.getElementById("routeProgressBar").style.width = `${Math.min(100, kills * 10)}%`;
+      } else {
+        typeBadge.textContent = area.type === "league" ? "CHAMPION LEAGUE" : area.type === "gym" ? `GYM • CAP LV. ${area.capLv}` : "DUNGEON";
+        typeBadge.className = "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-600 text-white";
+        document.getElementById("areaSubInfo").textContent = `Defeat all waves within the timer! Needed: ~${area.reqDps.toLocaleString("en-US")} DPS (you: ${getTeamDps().toLocaleString("en-US")})`;
+        routeBox.classList.add("hidden");
+        waveBox.classList.remove("hidden");
+        document.getElementById("waveTitleText").textContent = `Wave ${currentWave} / ${totalWaves}`;
+
+        const dotsHtml = [];
+        for (let i = 1; i <= totalWaves; i++) {
+          const active = i < currentWave ? "bg-emerald-500" : i === currentWave ? "bg-amber-400 animate-pulse" : "bg-slate-700";
+          dotsHtml.push(`<div class="flex-1 h-4 rounded ${active} flex items-center justify-center text-[9px] font-bold text-slate-950">${i === totalWaves ? "👑" : i}</div>`);
+        }
+        document.getElementById("waveDots").innerHTML = dotsHtml.join("");
+      }
+
+      const roleTag = document.getElementById("enemyRoleTag");
+      if (currentEnemy.rarityLabel) {
+        roleTag.textContent = currentEnemy.rarityLabel;
+        roleTag.classList.remove("hidden");
+      } else {
+        roleTag.classList.add("hidden");
+      }
+
+      const db = POKEMON_DB[currentEnemy.id];
+      const owned = db && hasFamilyVariant(db.lineId, currentEnemy.isShiny);
+      document.getElementById("caughtIndicator").textContent = currentEnemy.canCatch
+        ? (owned ? (currentEnemy.isShiny ? "✨ Shiny Owned" : "✔ Normal Owned") : (currentEnemy.isShiny ? "✨ New Shiny!" : "🆕 New Line!"))
+        : "🔒 Trainer";
+
+      document.getElementById("enemyName").textContent = (currentEnemy.isShiny ? "✨ " : "") + currentEnemy.name;
+      document.getElementById("enemyLevel").textContent = `Lv. ${currentEnemy.level}`;
+      const spriteEl = document.getElementById("enemySprite");
+      spriteEl.src = spriteSrc(currentEnemy.id, currentEnemy.isShiny);
+      spriteEl.className = `pixelated animate-float ${currentEnemy.isBoss ? "w-32 h-32 boss-glow" : "w-28 h-28"} ${currentEnemy.isShiny ? "shiny-glow" : ""}`;
+
+      const previewEl = document.getElementById("areaSpawnsPreview");
+      if (area.spawns) {
+        const normalTags = (area.spawns || []).map(sid => ({ id: sid, tag: "", style: "border-slate-700 bg-slate-900 text-slate-300" }));
+        const starterTags = (area.rareStarters || []).map(sid => ({ id: sid, tag: "⭐ ", style: "border-amber-500/60 bg-amber-950/40 text-amber-300" }));
+        const fossilTags = (area.rareFossils || []).map(sid => ({ id: sid, tag: "🪨 ", style: "border-stone-400/60 bg-stone-900/60 text-stone-300" }));
+        const mythicalTags = (area.rareMythicals || []).map(sid => ({ id: sid, tag: "🔮 ", style: "border-purple-500/60 bg-purple-950/40 text-purple-300" }));
+
+        previewEl.innerHTML = [...normalTags, ...starterTags, ...fossilTags, ...mythicalTags].map(item => {
+          const sdb = POKEMON_DB[item.id];
+          if (!sdb) return "";
+          const hasN = hasFamilyVariant(sdb.lineId, false);
+          return `<span class="text-[10px] px-1.5 py-0.5 rounded border ${item.style}">${item.tag}${dexName(item.id)} ${hasN ? '✔' : ''}</span>`;
+        }).join("");
+      } else {
+        previewEl.innerHTML = "";
+      }
+
+      document.getElementById("throwBallBtn").disabled = !currentEnemy.canCatch;
+      document.getElementById("throwBallBtn").textContent = currentEnemy.canCatch ? "Throw Poké Ball!" : "Trainer Pokémon";
+      updateEnemyHpUI();
+    }
+
+    function renderAreaList() {
+      const container = document.getElementById("areaList");
+      document.getElementById("regionTitle").textContent = state.region.toUpperCase();
+      container.innerHTML = AREAS.filter(a => a.region === state.region).map(area => {
+        const globalIdx = AREAS.findIndex(a => a.id === area.id);
+        const unlocked = isAreaUnlocked(globalIdx);
+        const isCurrent = area.id === state.currentAreaId;
+        const cleared = area.type === "route" ? (state.routeKills[area.id] || 0) >= 10 : !!state.clearedAreas[area.id];
+
+        return `
+          <button ${unlocked ? `onclick="enterArea('${area.id}')"` : "disabled"}
+            class="w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between ${
+              isCurrent ? "bg-slate-800 border-yellow-400" : unlocked ? "bg-slate-950/60 hover:bg-slate-800/60 border-slate-800" : "opacity-40 cursor-not-allowed"
+            }">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 uppercase">${area.type}</span>
+                <span class="text-xs font-bold text-white">${area.name}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">
+                ${area.capLv ? `Level Cap: Lv. ${area.capLv} • ${area.badgeName}` : `Lv. ${area.minLv}-${area.maxLv}`}
+              </div>
+            </div>
+            <div class="text-xs font-bold ${cleared ? "text-emerald-400" : "text-slate-500"}">${cleared ? "✔" : ""}</div>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderTeam() {
+      const cap = getCurrentCapInfo().cap;
+      document.getElementById("teamCount").textContent = state.team.length;
+      document.getElementById("teamCapIndicator").textContent = `Cap: Lv. ${cap}`;
+
+      document.getElementById("teamList").innerHTML = state.team.map(mon => {
+        const db = POKEMON_DB[mon.id] || { name: `#${mon.id}`, baseDps: 15 };
+        const dps = getPokemonDps(mon);
+        const atCap = mon.level >= cap;
+        const xpPct = atCap ? 100 : Math.min(100, (mon.xp / getXpNeeded(mon.level)) * 100);
+        const sprite = spriteSrc(mon.id, mon.isShiny);
+
+        return `
+          <div draggable="true" ondragstart="dragStart(event, ${mon.uid}, false)" data-uid="${mon.uid}"
+            class="bg-slate-950/80 hover:bg-slate-800/80 border ${mon.isShiny ? "border-yellow-500/60" : "border-slate-800"} rounded-lg p-2 flex items-center gap-2.5 cursor-grab active:cursor-grabbing">
+            <img src="${sprite}" class="w-11 h-11 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white truncate">${mon.favorite ? '<span class="text-amber-400">★</span> ' : ""}${mon.isShiny ? "✨ " : ""}${db.name}</span>
+                <span class="text-xs font-bold ${atCap ? "text-amber-400" : "text-sky-300"}">Lv. ${mon.level}</span>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-slate-400 mt-0.5">
+                <span>⚔️ ${dps.toLocaleString()} DPS ${mon.isShiny ? '<strong class="text-yellow-400">(+75%)</strong>' : ''}</span>
+                <span>${atCap ? "MAX" : `${Math.floor(xpPct)}%`}</span>
+              </div>
+              <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
+                <div class="h-full ${atCap ? "bg-amber-400" : "bg-sky-500"}" style="width: ${xpPct}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("pcCount").textContent = state.pc.length;
+      const favs = [...state.team, ...state.pc].filter(m => m.favorite).length;
+      document.getElementById("pcFavCount").textContent = favs ? `★ ${favs} favorite${favs > 1 ? "s" : ""}` : "";
+      const preview = [...state.pc].sort((a, b) => (b.favorite - a.favorite) || (getPokemonDps(b) - getPokemonDps(a))).slice(0, 12);
+      document.getElementById("pcPreview").innerHTML = preview.length
+        ? preview.map(m => `<img title="${POKEMON_DB[m.id].name} Lv. ${m.level}" src="${spriteUrl(m)}" class="w-8 h-8 pixelated ${m.isShiny ? "shiny-glow" : ""}" />`).join("")
+          + (state.pc.length > 12 ? `<span class="text-[10px] text-slate-400 self-center">+${state.pc.length - 12}</span>` : "")
+        : `<span class="text-[11px] text-slate-500">Your PC is empty. Catch more Pokémon!</span>`;
+      if (isPcOpen()) {
+        if (pcPointerInside) pcNeedsRefresh = true; // niet verversen terwijl de muis erboven hangt (anders mis je klikken)
+        else renderPc();
+      }
+    }
+
+    // ===================== 6b. PC BOX POP-UP =====================
+    let pcSwapUid = null;
+    let pcPointerInside = false;
+    let pcNeedsRefresh = false;
+
+    function spriteUrl(mon) {
+      return spriteSrc(mon.id, mon.isShiny);
+    }
+    function pcPrefs() { return (state.pcPrefs ||= { sort: "dps", dir: -1, shinyOnly: false, favOnly: false }); }
+    function isPcOpen() { return !document.getElementById("pcModal").classList.contains("hidden"); }
+    function findMon(uid) {
+      return state.team.find(m => m.uid === uid) || state.pc.find(m => m.uid === uid);
+    }
+
+    function openPc() {
+      pcSwapUid = null;
+      document.getElementById("pcModal").classList.remove("hidden");
+      renderPc();
+    }
+    function closePc() {
+      pcSwapUid = null;
+      pcPointerInside = false;
+      document.getElementById("pcModal").classList.add("hidden");
+    }
+
+    function setPcSort(key) {
+      const prefs = pcPrefs();
+      if (prefs.sort === key) prefs.dir *= -1;
+      else { prefs.sort = key; prefs.dir = key === "dex" ? 1 : -1; } // Dex oplopend, de rest hoogste eerst
+      renderPc(); saveGame();
+    }
+    function togglePcFilter(key) {
+      pcPrefs()[key] = !pcPrefs()[key];
+      renderPc(); saveGame();
+    }
+
+    function toggleFavorite(uid, ev) {
+      if (ev) ev.stopPropagation();
+      const mon = findMon(uid);
+      if (!mon) return;
+      mon.favorite = !mon.favorite;
+      saveGame();
+      renderTeam();
+      renderPc();
+    }
+
+    // Klik op een PC-Pokémon: erbij als er plek is, anders wisselmodus
+    function pcClickMon(uid) {
+      const idx = state.pc.findIndex(m => m.uid === uid);
+      if (idx < 0) return;
+      if (state.team.length < 6) {
+        const [mon] = state.pc.splice(idx, 1);
+        state.team.push(mon);
+        pcSwapUid = null;
+        addLog(`⚡ ${POKEMON_DB[mon.id].name} joined your party!`);
+        afterPartyChange();
+      } else {
+        pcSwapUid = pcSwapUid === uid ? null : uid;
+        renderPc();
+      }
+    }
+
+    // Klik op een partylid: wisselen als er een PC-Pokémon gekozen is
+    function pcClickParty(uid) {
+      if (!pcSwapUid) return;
+      const pIdx = state.pc.findIndex(m => m.uid === pcSwapUid);
+      const tIdx = state.team.findIndex(m => m.uid === uid);
+      if (pIdx < 0 || tIdx < 0) { pcSwapUid = null; renderPc(); return; }
+      const incoming = state.pc[pIdx];
+      const outgoing = state.team[tIdx];
+      state.team[tIdx] = incoming;   // zelfde plek in de party
+      state.pc.splice(pIdx, 1, outgoing);
+      pcSwapUid = null;
+      addLog(`🔄 Swapped ${POKEMON_DB[outgoing.id].name} for ${POKEMON_DB[incoming.id].name}.`);
+      afterPartyChange();
+    }
+
+    function pcSendToBox(uid, ev) {
+      if (ev) ev.stopPropagation();
+      if (state.team.length <= 1) { addLog("⚠️ Keep at least 1 Pokémon in your Active Party!"); return; }
+      const idx = state.team.findIndex(m => m.uid === uid);
+      if (idx < 0) return;
+      const [mon] = state.team.splice(idx, 1);
+      state.pc.push(mon);
+      afterPartyChange();
+    }
+
+    function cancelPcSwap() { pcSwapUid = null; renderPc(); }
+
+    function afterPartyChange() {
+      saveGame();
+      updateAllUI();
+      renderPc();
+    }
+
+    function sortedFilteredPc() {
+      const prefs = pcPrefs();
+      const q = (document.getElementById("pcSearchInput")?.value || "").trim().toLowerCase();
+      const key = {
+        dps: m => getPokemonDps(m),
+        dex: m => m.id,
+        level: m => m.level,
+        newest: m => m.uid
+      }[prefs.sort] || (m => getPokemonDps(m));
+      return state.pc
+        .filter(m => !prefs.shinyOnly || m.isShiny)
+        .filter(m => !prefs.favOnly || m.favorite)
+        .filter(m => !q || POKEMON_DB[m.id].name.toLowerCase().includes(q))
+        .sort((a, b) => ((key(a) - key(b)) * prefs.dir) || (a.id - b.id));
+    }
+
+    function renderPc() {
+      if (!isPcOpen()) return;
+      pcNeedsRefresh = false;
+      const prefs = pcPrefs();
+
+      // knoppen-stijl
+      ["dps", "dex", "level", "newest"].forEach(k => {
+        const btn = document.getElementById(`pcSort-${k}`);
+        const active = prefs.sort === k;
+        const arrow = active ? (prefs.dir === 1 ? " ↑" : " ↓") : "";
+        btn.className = `px-2.5 py-1 rounded text-xs font-bold ${active ? "bg-sky-500 text-slate-950" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`;
+        btn.dataset.label ||= btn.textContent;
+        btn.textContent = btn.dataset.label + arrow;
+      });
+      document.getElementById("pcFilter-shinyOnly").className = `px-2.5 py-1 rounded text-xs font-bold ${prefs.shinyOnly ? "bg-yellow-400 text-slate-950" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`;
+      document.getElementById("pcFilter-favOnly").className = `px-2.5 py-1 rounded text-xs font-bold ${prefs.favOnly ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`;
+
+      const all = [...state.team, ...state.pc];
+      document.getElementById("pcModalStats").textContent =
+        `${state.pc.length} in PC • ${all.filter(m => m.isShiny).length} shiny • ${all.filter(m => m.favorite).length} favorites • Party DPS ${getTeamDps().toLocaleString("en-US")}`;
+      document.getElementById("pcPartyCount").textContent = state.team.length;
+
+      // wisselbanner
+      const banner = document.getElementById("pcSwapBanner");
+      const swapMon = pcSwapUid && state.pc.find(m => m.uid === pcSwapUid);
+      if (swapMon) {
+        banner.classList.remove("hidden");
+        banner.innerHTML = `<span>🔄 Party is full. Click a party member to swap with <strong>${POKEMON_DB[swapMon.id].name}</strong> (⚔️ ${getPokemonDps(swapMon).toLocaleString("en-US")}).</span>
+          <button onclick="cancelPcSwap()" class="text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-0.5 rounded">Cancel</button>`;
+      } else {
+        banner.classList.add("hidden");
+        pcSwapUid = null;
+      }
+
+      // party
+      const partyHtml = state.team.map(mon => {
+        const dps = getPokemonDps(mon);
+        const diff = swapMon ? getPokemonDps(swapMon) - dps : 0;
+        return `
+          <div onclick="pcClickParty(${mon.uid})"
+            class="relative bg-slate-950 border ${swapMon ? "border-amber-400 ring-1 ring-amber-400 cursor-pointer hover:bg-amber-950/40" : mon.isShiny ? "border-yellow-500/60" : "border-slate-800"} rounded-lg p-1.5 flex flex-col items-center">
+            <button onclick="toggleFavorite(${mon.uid}, event)" title="Favorite" class="absolute top-0.5 left-1 text-sm ${mon.favorite ? "text-amber-400" : "text-slate-600 hover:text-amber-300"}">${mon.favorite ? "★" : "☆"}</button>
+            ${state.team.length > 1 && !swapMon ? `<button onclick="pcSendToBox(${mon.uid}, event)" title="Send to PC" class="absolute top-0.5 right-1 text-[10px] font-bold text-slate-400 hover:text-red-300">→PC</button>` : ""}
+            <img src="${spriteUrl(mon)}" class="w-12 h-12 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
+            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${POKEMON_DB[mon.id].name}</span>
+            <span class="text-[10px] text-sky-400">Lv. ${mon.level}</span>
+            <span class="text-[9px] font-mono text-emerald-400">⚔️ ${dps.toLocaleString("en-US")}</span>
+            ${swapMon ? `<span class="text-[9px] font-mono font-bold ${diff >= 0 ? "text-emerald-300" : "text-red-400"}">${diff >= 0 ? "+" : ""}${diff.toLocaleString("en-US")}</span>` : ""}
+          </div>`;
+      });
+      for (let i = state.team.length; i < 6; i++) {
+        partyHtml.push(`<div class="border border-dashed border-slate-700 rounded-lg flex items-center justify-center text-[10px] text-slate-600 min-h-[104px]">Empty slot</div>`);
+      }
+      document.getElementById("pcParty").innerHTML = partyHtml.join("");
+
+      // PC-grid
+      const list = sortedFilteredPc();
+      const grid = document.getElementById("pcGrid");
+      if (!list.length) {
+        grid.innerHTML = `<div class="col-span-full text-center text-xs text-slate-500 py-10">${state.pc.length ? "No Pokémon match these filters." : "Your PC is empty. Catch more Pokémon!"}</div>`;
+        return;
+      }
+      grid.innerHTML = list.map(mon => {
+        const selected = mon.uid === pcSwapUid;
+        return `
+          <div onclick="pcClickMon(${mon.uid})" title="${state.team.length < 6 ? "Add to party" : "Swap into party"}"
+            class="relative cursor-pointer bg-slate-950 hover:bg-slate-800 border ${selected ? "border-amber-400 ring-2 ring-amber-400" : mon.isShiny ? "border-yellow-500/70" : "border-slate-800"} rounded-lg p-1.5 flex flex-col items-center">
+            <button onclick="toggleFavorite(${mon.uid}, event)" title="Favorite" class="absolute top-0.5 left-1 text-sm ${mon.favorite ? "text-amber-400" : "text-slate-600 hover:text-amber-300"}">${mon.favorite ? "★" : "☆"}</button>
+            <span class="absolute top-0.5 right-1 text-[9px] font-mono text-slate-500">#${mon.id}</span>
+            <img loading="lazy" src="${spriteUrl(mon)}" class="w-12 h-12 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
+            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${POKEMON_DB[mon.id].name}</span>
+            <span class="text-[10px] text-sky-400">Lv. ${mon.level}</span>
+            <span class="text-[9px] font-mono text-emerald-400">⚔️ ${getPokemonDps(mon).toLocaleString("en-US")}</span>
+          </div>`;
+      }).join("");
+    }
+
+    // ===================== 6c. BADGE-ICOONTJES (eigen ontwerp: medaille + type-symbool) =====================
+    const BADGE_TYPE = {
+      boulder: "rock", cascade: "water", thunder: "electric", rainbow: "grass", soul: "poison", marsh: "psychic", volcano: "fire", earth: "ground",
+      zephyr: "flying", hive: "bug", plain: "normal", fog: "ghost", storm: "fighting", mineral: "steel", glacier: "ice", rising: "dragon",
+      stone: "rock", knuckle: "fighting", dynamo: "electric", heat: "fire", balance: "normal", feather: "flying", mind: "psychic", rain: "water",
+      coal: "rock", forest: "grass", cobble: "fighting", fen: "water", relic: "ghost", mine: "steel", icicle: "ice", beacon: "electric",
+      trio: "grass", basic: "normal", insect: "bug", bolt: "electric", quake: "ground", jet: "flying", freeze: "ice", legend: "dragon",
+      kalos_bug: "bug", kalos_cliff: "rock", kalos_rumble: "fighting", kalos_plant: "grass", kalos_voltage: "electric", kalos_fairy: "fairy", kalos_psychic: "psychic", kalos_iceberg: "ice",
+      alola_normal: "normal", alola_fight: "fighting", alola_water: "water", alola_fire: "fire", alola_rock: "rock", alola_elec: "electric", alola_ghost: "ghost", alola_ground: "ground",
+      galar_grass: "grass", galar_water: "water", galar_fire: "fire", galar_fight: "fighting", galar_fairy: "fairy", galar_rock: "rock", galar_dark: "dark", galar_dragon: "dragon"
+    };
+    const TYPE_COLOR = {
+      rock: "#b0956a", water: "#3b82f6", electric: "#eab308", grass: "#22c55e", poison: "#a855f7", psychic: "#ec4899",
+      fire: "#f97316", ground: "#c2862a", flying: "#38bdf8", bug: "#84cc16", normal: "#a1a1aa", ghost: "#7c3aed",
+      fighting: "#dc2626", steel: "#94a3b8", ice: "#22d3ee", dragon: "#6366f1", fairy: "#f472b6", dark: "#57534e", trophy: "#f59e0b"
+    };
+    // Symbolen in een 24×24-raster; f = vullen, s = lijn
+    function typeSymbol(type, c) {
+      const f = (d) => `<path d="${d}" fill="${c}"/>`;
+      const st = (d, w = 2) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      switch (type) {
+        case "rock": return f("M7 18 L4.5 11.5 L8.5 5.5 L15 4.5 L19.5 9.5 L18.5 16 L12.5 19.5 Z") + st("M8.5 5.5 L11 11 L18.5 16 M11 11 L4.5 11.5", 1.2).replace(c, "rgba(0,0,0,.35)");
+        case "water": return f("M12 3.5 C12 3.5 5.5 11 5.5 14.5 A6.5 6.5 0 0 0 18.5 14.5 C18.5 11 12 3.5 12 3.5 Z");
+        case "electric": return f("M13.5 2.5 L5.5 13.5 H11 L9.5 21.5 L18.5 9.5 H13 Z");
+        case "grass": return f("M5 19 C5 10 11 4.5 19.5 4.5 C19.5 13 14 19 5 19 Z") + st("M5.5 18.5 L15 9", 1.3).replace(c, "rgba(0,0,0,.35)");
+        case "poison": return `<circle cx="9" cy="14.5" r="4.5" fill="${c}"/><circle cx="15.5" cy="8.5" r="3.2" fill="${c}"/><circle cx="17" cy="16.5" r="2.2" fill="${c}"/>`;
+        case "psychic": return f("M2.5 12 C7 5.5 17 5.5 21.5 12 C17 18.5 7 18.5 2.5 12 Z") + `<circle cx="12" cy="12" r="3.3" fill="rgba(0,0,0,.45)"/>`;
+        case "fire": return f("M12 2.5 C14 8 18.5 9 18.5 14.5 A6.5 6.5 0 0 1 5.5 14.5 C5.5 11 7.5 9 9 7 C10 10.5 11.5 10 12 2.5 Z");
+        case "ground": return f("M2.5 19.5 L9 8.5 L13 15 L16 10.5 L21.5 19.5 Z");
+        case "flying": return f("M2.5 14 C6.5 7.5 13 5.5 21.5 5.5 C18.5 8.5 16.5 9.5 13.5 10.5 C16.5 10.5 18.5 11.5 19.5 12.5 C15.5 15 11.5 15.5 8 14.5 C7 16.5 5 17.5 2.5 14 Z");
+        case "bug": return `<circle cx="12" cy="13.5" r="6.5" fill="${c}"/><circle cx="12" cy="5.8" r="2.6" fill="${c}"/>` + st("M12 7.5 V20", 1.3).replace(c, "rgba(0,0,0,.4)") + `<circle cx="9" cy="12" r="1.2" fill="rgba(0,0,0,.4)"/><circle cx="15" cy="15.5" r="1.2" fill="rgba(0,0,0,.4)"/>`;
+        case "normal": return f("M12 2.5 L14.6 9 L21.5 9.3 L16.1 13.6 L18 20.5 L12 16.6 L6 20.5 L7.9 13.6 L2.5 9.3 L9.4 9 Z");
+        case "ghost": return f("M5.5 21 V11 A6.5 6.5 0 0 1 18.5 11 V21 L15.3 18.6 L12 21 L8.7 18.6 Z") + `<circle cx="9.6" cy="11" r="1.5" fill="rgba(0,0,0,.55)"/><circle cx="14.4" cy="11" r="1.5" fill="rgba(0,0,0,.55)"/>`;
+        case "fighting": return f("M12 1.5 L14 8 L20 5 L16.5 11 L22.5 13 L16.5 15 L19 21 L13 17.5 L10 22.5 L9 16.5 L3 18.5 L7 13.5 L1.5 9.5 L8 9 L6 3 L11 7 Z");
+        case "steel": return `<circle cx="12" cy="12" r="7" fill="none" stroke="${c}" stroke-width="4" stroke-dasharray="3.1 2.4"/><circle cx="12" cy="12" r="5" fill="${c}"/><circle cx="12" cy="12" r="2" fill="rgba(0,0,0,.45)"/>`;
+        case "ice": return st("M12 3 V21 M4.2 7.5 L19.8 16.5 M4.2 16.5 L19.8 7.5 M12 6.5 L9.8 4.5 M12 6.5 L14.2 4.5 M12 17.5 L9.8 19.5 M12 17.5 L14.2 19.5", 2);
+        case "dragon": return st("M6.5 3.5 C10.5 8.5 10.5 15 7 20.5 M12.5 2.5 C16.5 8.5 16.5 15 13 21.5 M18 4 C21 9 21 14 19 18", 2.4);
+        case "fairy": return f("M12 20.5 C5 15.5 2.5 11.5 2.5 8.5 A4.7 4.7 0 0 1 12 6.2 A4.7 4.7 0 0 1 21.5 8.5 C21.5 11.5 19 15.5 12 20.5 Z");
+        case "dark": return f("M15 2.5 A9.5 9.5 0 1 0 21.5 15 A7.5 7.5 0 1 1 15 2.5 Z");
+        case "trophy": return f("M6.5 3.5 H17.5 V9 A5.5 5.5 0 0 1 6.5 9 Z M10.5 14 H13.5 V17.5 H16.5 V20.5 H7.5 V17.5 H10.5 Z")
+          + st("M6.5 5.5 H4 V7.5 A3 3 0 0 0 7 10.5 M17.5 5.5 H20 V7.5 A3 3 0 0 1 17 10.5", 1.6);
+        default: return `<circle cx="12" cy="12" r="5" fill="${c}"/>`;
+      }
+    }
+    function badgeSvg(badgeId, owned) {
+      const type = badgeId.endsWith("_champ") ? "trophy" : (BADGE_TYPE[badgeId] || "normal");
+      const col = TYPE_COLOR[type];
+      const gid = `bg_${badgeId}`;
+      if (!owned) {
+        return `<svg viewBox="0 0 48 48" width="40" height="40" class="w-10 h-10" aria-hidden="true">
+          <circle cx="24" cy="24" r="21" fill="#0f172a" stroke="#334155" stroke-width="2.5" stroke-dasharray="4 3"/>
+          <g transform="translate(12 12)" opacity=".55">${typeSymbol(type, "#334155")}</g>
+          <g transform="translate(29 29)"><rect x="1" y="6" width="14" height="11" rx="2" fill="#475569"/><path d="M4 6.5 V4.5 A4 4 0 0 1 12 4.5 V6.5" fill="none" stroke="#475569" stroke-width="2.4"/></g>
+        </svg>`;
+      }
+      return `<svg viewBox="0 0 48 48" width="40" height="40" class="w-10 h-10" style="filter: drop-shadow(0 0 5px ${col}99)" aria-hidden="true">
+        <defs><radialGradient id="${gid}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ffffff" stop-opacity=".55"/><stop offset=".45" stop-color="${col}"/><stop offset="1" stop-color="#0f172a" stop-opacity=".55"/></radialGradient></defs>
+        <circle cx="24" cy="24" r="22" fill="${col}"/>
+        <circle cx="24" cy="24" r="22" fill="url(#${gid})"/>
+        <circle cx="24" cy="24" r="17" fill="#0f172a" fill-opacity=".55" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.2"/>
+        <g transform="translate(12 12)">${typeSymbol(type, "#f8fafc")}</g>
+      </svg>`;
+    }
+
+    function updateBallButtons() {
+      ["pokeball", "greatball", "ultraball", "masterball"].forEach(b => {
+        document.getElementById(`count-${b}`).textContent = state.balls[b];
+        const btn = document.getElementById(`ballBtn-${b}`);
+        if (state.selectedBall === b) btn.classList.add("ring-2", "ring-yellow-400");
+        else btn.classList.remove("ring-2", "ring-yellow-400");
+      });
+    }
+
+    function updateAllUI() {
+      const capInfo = getCurrentCapInfo();
+      document.getElementById("levelCapBanner").textContent = `🔒 Level Cap: Lv. ${capInfo.cap} (${capInfo.leaderName})`;
+      document.getElementById("pokedollarsDisplay").textContent = state.pokedollars.toLocaleString("en-US");
+      document.getElementById("dpsDisplay").textContent = getTeamDps().toLocaleString("en-US");
+      document.getElementById("badgeBonusDisplay").textContent = `+${getBadgeBonusPct()}%`;
+
+      const shinyOddsText = state.shinyCharmTier === 1 ? "1 / 4,096" : state.shinyCharmTier === 2 ? "1 / 2,730" : state.shinyCharmTier >= 3 ? "1 / 1,365 ✨" : "1 / 8,192";
+      document.getElementById("shinyOddsDisplay").textContent = shinyOddsText;
+
+      document.getElementById("tonicTitleText").textContent = `💪 Power Tonic (Lv. ${state.powerTonicLvl})`;
+      document.getElementById("tonicCostText").textContent = `₽ ${getTonicCost().toLocaleString("en-US")}`;
+      document.getElementById("expTitleText").textContent = `📘 Exp. Share+ (Lv. ${state.expShareLvl})`;
+      document.getElementById("expCostText").textContent = `₽ ${getExpShareCost().toLocaleString("en-US")}`;
+
+      const charmBtn = document.getElementById("buyShinyCharmBtn");
+      if (state.shinyCharmTier >= 3) {
+        document.getElementById("shinyCharmTitle").textContent = "✨ Master Shiny Charm (Max)";
+        document.getElementById("shinyCharmCost").textContent = "Owned ✔";
+        charmBtn.disabled = true;
+      } else {
+        const nextTier = state.shinyCharmTier + 1;
+        const nextCost = nextTier === 1 ? 100000 : nextTier === 2 ? 350000 : 1000000;
+        const nextOdds = nextTier === 1 ? "1/4096" : nextTier === 2 ? "1/2730" : "1/1365";
+        document.getElementById("shinyCharmTitle").textContent = `✨ Shiny Charm Tier ${nextTier}`;
+        document.getElementById("shinyCharmCost").textContent = `₽ ${nextCost.toLocaleString("en-US")} (${nextOdds})`;
+      }
+
+      const locks = { johto: "k_league", hoenn: "johto_league", sinnoh: "hoenn_league", unova: "sinnoh_league", kalos: "unova_league", alola: "kalos_league", galar: "alola_league" };
+      ["kanto", "johto", "hoenn", "sinnoh", "unova", "kalos", "alola", "galar"].forEach(reg => {
+        const tab = document.getElementById(`tab-${reg}`);
+        const unlocked = reg === "kanto" || !!state.clearedAreas[locks[reg]];
+        if (state.region === reg) {
+          tab.className = "px-2.5 py-1.5 rounded-md text-xs font-bold bg-amber-500 text-slate-950 transition";
+          tab.textContent = reg.charAt(0).toUpperCase() + reg.slice(1);
+        } else if (unlocked) {
+          tab.className = "px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-800 text-white hover:bg-slate-700 transition";
+          tab.textContent = reg.charAt(0).toUpperCase() + reg.slice(1);
+        } else {
+          tab.className = "px-2.5 py-1.5 rounded-md text-xs font-bold bg-slate-900 text-slate-500 transition";
+          tab.textContent = `🔒 ${reg.charAt(0).toUpperCase() + reg.slice(1)}`;
+        }
+      });
+
+      document.getElementById("badgeCountDisplay").textContent = `${state.badges.length} Badges`;
+      // Alleen de badges van de regio waar je nu bent
+      const regionMajor = AREAS.filter(a => (a.type === "gym" || a.type === "league") && a.region === state.region);
+      const regionOwned = regionMajor.filter(g => state.badges.includes(g.badgeId)).length;
+      document.getElementById("badgeRegionTitle").textContent = state.region.charAt(0).toUpperCase() + state.region.slice(1);
+      document.getElementById("badgeRegionCount").textContent = `${regionOwned} / ${regionMajor.length}`;
+      document.getElementById("badgeContainer").innerHTML = regionMajor.map(g => {
+        const owned = state.badges.includes(g.badgeId);
+        const shortName = g.badgeName.replace(/^(Galar |Kalos |Alola )/, "").replace(/ (Badge|Trophy)$/, "");
+        return `<div title="${g.badgeName} — ${g.name}${owned ? " ✔" : " (locked)"}" class="flex flex-col items-center min-w-0">
+            ${badgeSvg(g.badgeId, owned)}
+            <span class="text-[9px] leading-tight mt-0.5 text-center truncate w-full ${owned ? "text-yellow-200" : "text-slate-600"}">${shortName}</span>
+          </div>`;
+      }).join("");
+
+      updateBallButtons();
+      renderAreaList();
+      renderTeam();
+      renderArena();
+    }
+
+    setInterval(() => {
+      if (!state.starterChosen || !currentEnemy) return;
+      const dps = getTeamDps();
+      if (dps > 0) damageEnemy(dps / 10);
+
+      const area = getArea(state.currentAreaId);
+      if (area.type !== "route") {
+        dungeonTimeLeft = Math.max(0, dungeonTimeLeft - 0.1);
+        document.getElementById("timerText").textContent = `${dungeonTimeLeft.toFixed(1)}s`;
+        document.getElementById("timerBar").style.width = `${(dungeonTimeLeft / dungeonMaxTime) * 100}%`;
+        if (dungeonTimeLeft <= 0) {
+          addLog(`⏰ Time ran out in ${area.name}! Restarted at Wave 1.`);
+          enterArea(state.currentAreaId);
+        }
+      }
+    }, 100);
+
+    window.addEventListener("DOMContentLoaded", loadGame);
+  </script>
+</body>
+</html>
