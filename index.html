@@ -138,6 +138,18 @@
     </div>
   </div>
 
+  <!-- Evolution Choice Modal -->
+  <div id="evolveModal" class="fixed inset-0 bg-slate-950/90 z-[60] hidden flex items-center justify-center p-4" onclick="if (event.target === this) this.classList.add('hidden')">
+    <div class="bg-slate-900 border-2 border-fuchsia-500 rounded-2xl max-w-xl w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-1">
+        <h2 id="evolveTitle" class="font-extrabold text-sm text-fuchsia-300">Evolve</h2>
+        <button onclick="document.getElementById('evolveModal').classList.add('hidden')" class="text-xs text-slate-400 hover:text-white">Not now ✕</button>
+      </div>
+      <p class="text-[11px] text-slate-400 mb-3">Choose what it becomes. You can catch another one later for the other evolutions.</p>
+      <div id="evolveOptions" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+    </div>
+  </div>
+
   <!-- PC Box Modal -->
   <div id="pcModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex items-center justify-center p-4" onclick="if (event.target === this) closePc()">
     <div id="pcModalPanel" onmouseenter="pcPointerInside = true" onmouseleave="pcPointerInside = false; if (pcNeedsRefresh) renderPc()"
@@ -160,6 +172,7 @@
       <div class="flex flex-wrap items-center gap-1.5 mb-3">
         <span class="text-[11px] font-bold text-slate-400 mr-1">Sort:</span>
         <button onclick="setPcSort('dps')" id="pcSort-dps" class="px-2.5 py-1 rounded text-xs font-bold">⚔️ DPS</button>
+        <button onclick="setPcSort('potential')" id="pcSort-potential" title="Sort by how strong each Pokémon can become: its final evolution at the current level cap" class="px-2.5 py-1 rounded text-xs font-bold">🚀 Potential</button>
         <button onclick="setPcSort('dex')" id="pcSort-dex" class="px-2.5 py-1 rounded text-xs font-bold"># Dex</button>
         <button onclick="setPcSort('level')" id="pcSort-level" class="px-2.5 py-1 rounded text-xs font-bold">Lv. Level</button>
         <button onclick="setPcSort('newest')" id="pcSort-newest" class="px-2.5 py-1 rounded text-xs font-bold">🕒 Newest</button>
@@ -885,48 +898,33 @@
       898: { name: "Calyrex", lineId: 204, baseDps: 108 }
     };
 
-    // Alle geëvolueerde vormen (Stage 2 en Stage 3) zodat deze NIET op vroege routes spawnen!
-    const EVOLVED_POKEMON_IDS = new Set([
-      // Gen 1 Evolved
-      2,3, 5,6, 8,9, 11,12, 14,15, 17,18, 20, 22, 24, 26, 28, 30,31, 33,34, 36, 38, 40, 42, 44,45, 47, 49, 51, 53, 55, 57, 59, 61,62, 64,65, 67,68, 70,71, 73, 75,76, 78, 80, 82, 85, 87, 89, 91, 93,94, 97, 99, 101, 103, 105, 110, 112, 117, 119, 121, 130, 134,135,136, 139, 141, 148,149,
-      // Gen 2 Evolved
-      153,154, 156,157, 159,160, 162, 164, 166, 168, 169, 171, 176, 178, 180,181, 182, 184, 186, 188,189, 192, 195, 196,197, 199, 203, 205, 208, 210, 212, 217, 219, 221, 224, 226, 229, 230, 232, 233, 237, 242, 247,248,
-      // Gen 3 Evolved
-      253,254, 256,257, 259,260, 262, 264, 266,267, 268,269, 271,272, 274,275, 277, 279, 281,282, 284, 286, 288,289, 291,292, 294,295, 297, 301, 305,306, 308, 310, 317, 319, 321, 323, 326, 329,330, 332, 334, 340, 342, 344, 346, 348, 350, 354, 356, 362, 364,365, 367,368, 372,373, 375,376,
-      // Gen 4 Evolved
-      388,389, 391,392, 394,395, 397,398, 400, 402, 404,405, 407, 409, 411, 413,414, 416, 419, 421, 423, 424, 426, 428, 429, 430, 432, 435, 437, 444,445, 448, 450, 452, 454, 457, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470,471,472,473,474,475,476,477,478,
-      // Gen 5 Evolved
-      496,497, 499,500, 502,503, 505, 507,508, 510, 512, 514, 516, 518, 520,521, 523, 525,526, 528, 530, 533,534, 536,537, 541,542, 544,545, 547, 549, 552,553, 555, 558, 560, 563, 565, 567, 569, 571, 573, 575,576, 578,579, 581, 583,584, 586, 589, 591, 593, 596, 598, 600,601, 603,604, 606, 608,609, 611,612, 614, 617, 620, 623, 625, 628, 630, 634,635, 637,
-      // Gen 6 Evolved
-      651,652, 654,655, 657,658, 660, 662,663, 665,666, 668, 670,671, 673, 675, 678, 680,681, 683, 685, 687, 689, 691, 693, 695, 697, 699, 700, 705,706, 709, 711, 713, 715,
-      // Gen 7 Evolved
-      723,724, 726,727, 729,730, 732,733, 735, 737,738, 740, 743, 745, 748, 750, 752, 754, 756, 758, 760, 762,763, 768, 770, 773, 783,784, 790,791,792, 804, 809,
-      // Gen 8 Evolved
-      811,812, 814,815, 817,818, 820, 822,823, 825,826, 828, 830, 832, 834, 836, 838,839, 841,842, 844, 847, 849, 851, 853, 855, 857,858, 860,861, 862, 863, 864, 865, 866, 867, 869, 873, 879, 886,887, 892
-    ]);
+    // Echte evolutiedata (bron: PokeAPI) — [doel, level]. Evoluties via steen/ruil/vriendschap krijgen een vast level.
+    const EVOS = {"1":[[2,16]],"2":[[3,32]],"4":[[5,16]],"5":[[6,36]],"7":[[8,16]],"8":[[9,36]],"10":[[11,7]],"11":[[12,10]],"13":[[14,7]],"14":[[15,10]],"16":[[17,18]],"17":[[18,36]],"19":[[20,20]],"21":[[22,20]],"23":[[24,22]],"25":[[26,26]],"27":[[28,22]],"29":[[30,16]],"30":[[31,32]],"32":[[33,16]],"33":[[34,32]],"35":[[36,28]],"37":[[38,28]],"39":[[40,26]],"41":[[42,22]],"42":[[169,44]],"43":[[44,21]],"44":[[45,32],[182,30]],"46":[[47,24]],"48":[[49,31]],"50":[[51,26]],"52":[[53,28],[863,28]],"54":[[55,33]],"56":[[57,28]],"58":[[59,34]],"60":[[61,25]],"61":[[62,36],[186,36]],"63":[[64,16]],"64":[[65,38]],"66":[[67,28]],"67":[[68,40]],"69":[[70,21]],"70":[[71,34]],"72":[[73,30]],"74":[[75,25]],"75":[[76,40]],"77":[[78,40]],"79":[[80,37],[199,36]],"81":[[82,30]],"82":[[462,38]],"83":[[865,32]],"84":[[85,31]],"86":[[87,34]],"88":[[89,38]],"90":[[91,30]],"92":[[93,25]],"93":[[94,42]],"95":[[208,45]],"96":[[97,26]],"98":[[99,28]],"100":[[101,30]],"102":[[103,30]],"104":[[105,28]],"108":[[463,22]],"109":[[110,35]],"111":[[112,42]],"112":[[464,50]],"113":[[242,22]],"114":[[465,22]],"116":[[117,32]],"117":[[230,40]],"118":[[119,33]],"120":[[121,24]],"122":[[866,42]],"123":[[212,36]],"125":[[466,50]],"126":[[467,38]],"129":[[130,20]],"133":[[134,30],[135,30],[136,30],[196,22],[197,22],[470,22],[471,22],[700,22]],"137":[[233,36]],"138":[[139,40]],"140":[[141,40]],"147":[[148,30]],"148":[[149,55]],"152":[[153,16]],"153":[[154,32]],"155":[[156,14]],"156":[[157,36]],"158":[[159,18]],"159":[[160,30]],"161":[[162,15]],"163":[[164,20]],"165":[[166,18]],"167":[[168,22]],"170":[[171,27]],"172":[[25,12]],"173":[[35,12]],"174":[[39,12]],"175":[[176,12]],"176":[[468,30]],"177":[[178,25]],"179":[[180,15]],"180":[[181,30]],"183":[[184,18]],"187":[[188,18]],"188":[[189,27]],"190":[[424,22]],"191":[[192,30]],"193":[[469,22]],"194":[[195,20]],"198":[[430,30]],"200":[[429,30]],"204":[[205,31]],"207":[[472,22]],"209":[[210,23]],"215":[[461,22]],"216":[[217,30]],"218":[[219,38]],"220":[[221,33]],"221":[[473,52]],"222":[[864,38]],"223":[[224,25]],"228":[[229,24]],"231":[[232,25]],"233":[[474,44]],"236":[[106,20],[107,20],[237,20]],"238":[[124,30]],"239":[[125,30]],"240":[[126,30]],"246":[[247,30]],"247":[[248,55]],"252":[[253,16]],"253":[[254,36]],"255":[[256,16]],"256":[[257,36]],"258":[[259,16]],"259":[[260,36]],"261":[[262,18]],"263":[[264,20]],"264":[[862,35]],"265":[[266,7],[268,7]],"266":[[267,10]],"268":[[269,10]],"270":[[271,14]],"271":[[272,30]],"273":[[274,14]],"274":[[275,30]],"276":[[277,22]],"278":[[279,25]],"280":[[281,20]],"281":[[282,30],[475,30]],"283":[[284,22]],"285":[[286,23]],"287":[[288,18]],"288":[[289,36]],"290":[[291,20],[292,32]],"293":[[294,20]],"294":[[295,40]],"296":[[297,24]],"298":[[183,12]],"299":[[476,22]],"300":[[301,30]],"304":[[305,32]],"305":[[306,42]],"307":[[308,37]],"309":[[310,26]],"315":[[407,30]],"316":[[317,26]],"318":[[319,30]],"320":[[321,40]],"322":[[323,33]],"325":[[326,32]],"328":[[329,35]],"329":[[330,45]],"331":[[332,32]],"333":[[334,35]],"339":[[340,30]],"341":[[342,30]],"343":[[344,36]],"345":[[346,40]],"347":[[348,40]],"349":[[350,22]],"353":[[354,37]],"355":[[356,37]],"356":[[477,45]],"360":[[202,15]],"361":[[362,42],[478,30]],"363":[[364,32]],"364":[[365,44]],"366":[[367,36],[368,36]],"371":[[372,30]],"372":[[373,50]],"374":[[375,20]],"375":[[376,45]],"387":[[388,18]],"388":[[389,32]],"390":[[391,14]],"391":[[392,36]],"393":[[394,16]],"394":[[395,36]],"396":[[397,14]],"397":[[398,34]],"399":[[400,15]],"401":[[402,10]],"403":[[404,15]],"404":[[405,30]],"406":[[315,12]],"408":[[409,30]],"410":[[411,30]],"412":[[413,20],[414,20]],"415":[[416,21]],"418":[[419,26]],"420":[[421,25]],"422":[[423,30]],"425":[[426,28]],"427":[[428,22]],"431":[[432,38]],"433":[[358,12]],"434":[[435,34]],"436":[[437,33]],"438":[[185,12]],"439":[[122,12]],"440":[[113,12]],"443":[[444,24]],"444":[[445,48]],"446":[[143,12]],"447":[[448,28]],"449":[[450,34]],"451":[[452,40]],"453":[[454,37]],"456":[[457,31]],"458":[[226,12]],"459":[[460,40]],"495":[[496,17]],"496":[[497,36]],"498":[[499,17]],"499":[[500,36]],"501":[[502,17]],"502":[[503,36]],"504":[[505,20]],"506":[[507,16]],"507":[[508,32]],"509":[[510,20]],"511":[[512,30]],"513":[[514,30]],"515":[[516,30]],"517":[[518,30]],"519":[[520,21]],"520":[[521,32]],"522":[[523,27]],"524":[[525,25]],"525":[[526,36]],"527":[[528,22]],"529":[[530,31]],"532":[[533,25]],"533":[[534,36]],"535":[[536,25]],"536":[[537,36]],"540":[[541,20]],"541":[[542,28]],"543":[[544,22]],"544":[[545,30]],"546":[[547,30]],"548":[[549,30]],"551":[[552,29]],"552":[[553,40]],"554":[[555,35]],"557":[[558,34]],"559":[[560,39]],"562":[[563,34],[867,32]],"564":[[565,37]],"566":[[567,37]],"568":[[569,36]],"570":[[571,30]],"572":[[573,30]],"574":[[575,32]],"575":[[576,41]],"577":[[578,32]],"578":[[579,41]],"580":[[581,35]],"582":[[583,35]],"583":[[584,47]],"585":[[586,34]],"588":[[589,36]],"590":[[591,39]],"592":[[593,40]],"595":[[596,36]],"597":[[598,40]],"599":[[600,38]],"600":[[601,49]],"602":[[603,39]],"603":[[604,47]],"605":[[606,42]],"607":[[608,41]],"608":[[609,49]],"610":[[611,38]],"611":[[612,48]],"613":[[614,37]],"616":[[617,36]],"619":[[620,50]],"622":[[623,43]],"624":[[625,52]],"627":[[628,54]],"629":[[630,54]],"633":[[634,50]],"634":[[635,64]],"636":[[637,59]],"650":[[651,16]],"651":[[652,36]],"653":[[654,16]],"654":[[655,36]],"656":[[657,16]],"657":[[658,36]],"659":[[660,20]],"661":[[662,17]],"662":[[663,35]],"664":[[665,9]],"665":[[666,12]],"667":[[668,35]],"669":[[670,19]],"670":[[671,30]],"672":[[673,32]],"674":[[675,32]],"677":[[678,25]],"679":[[680,35]],"680":[[681,50]],"682":[[683,36]],"684":[[685,36]],"686":[[687,30]],"688":[[689,39]],"690":[[691,48]],"692":[[693,37]],"694":[[695,30]],"696":[[697,39]],"698":[[699,39]],"704":[[705,40]],"705":[[706,50]],"708":[[709,36]],"710":[[711,36]],"712":[[713,37]],"714":[[715,48]],"722":[[723,17]],"723":[[724,34]],"725":[[726,17]],"726":[[727,34]],"728":[[729,17]],"729":[[730,34]],"731":[[732,14]],"732":[[733,28]],"734":[[735,20]],"736":[[737,20]],"737":[[738,28]],"739":[[740,22]],"742":[[743,25]],"744":[[745,25]],"747":[[748,38]],"749":[[750,30]],"751":[[752,22]],"753":[[754,34]],"755":[[756,24]],"757":[[758,33]],"759":[[760,27]],"761":[[762,18]],"762":[[763,26]],"767":[[768,30]],"769":[[770,42]],"772":[[773,22]],"782":[[783,35]],"783":[[784,45]],"789":[[790,43]],"790":[[791,53],[792,53]],"803":[[804,22]],"808":[[809,50]],"810":[[811,16]],"811":[[812,35]],"813":[[814,16]],"814":[[815,35]],"816":[[817,16]],"817":[[818,35]],"819":[[820,24]],"821":[[822,18]],"822":[[823,38]],"824":[[825,10]],"825":[[826,30]],"827":[[828,18]],"829":[[830,20]],"831":[[832,24]],"833":[[834,22]],"835":[[836,25]],"837":[[838,18]],"838":[[839,34]],"840":[[841,30],[842,30]],"843":[[844,36]],"846":[[847,26]],"848":[[849,30]],"850":[[851,28]],"852":[[853,22]],"854":[[855,30]],"856":[[857,32]],"857":[[858,42]],"859":[[860,32]],"860":[[861,42]],"868":[[869,32]],"872":[[873,22]],"878":[[879,34]],"885":[[886,50]],"886":[[887,60]],"891":[[892,60]]};
+    const LEGENDARY_IDS = new Set([144,145,146,150,151,243,244,245,249,250,251,377,378,379,380,381,382,383,384,385,386,480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,638,639,640,641,642,643,644,645,646,647,648,649,716,717,718,719,720,721,772,773,785,786,787,788,789,790,791,792,800,801,802,807,808,809,888,889,890,891,892,893,894,895,896,897,898]);
+
+    // Afgeleid uit EVOS: van welke Pokémon evolueert iets, en in welk stadium zit het?
+    const PREVO = {};
+    for (const from in EVOS) EVOS[from].forEach(([to, level]) => { PREVO[to] = { from: +from, level }; });
+    const EVOLVED_POKEMON_IDS = new Set(Object.keys(PREVO).map(Number));
+    function evoOptions(id) { return (EVOS[id] || []).map(([to, level]) => ({ to, level })); }
+    function rootOf(id) { let c = id, n = 0; while (PREVO[c] && n++ < 5) c = PREVO[c].from; return c; }
+    function stageOf(id) { let c = id, n = 0; while (PREVO[c] && n < 5) { c = PREVO[c].from; n++; } return n; }
+    function stagesBelow(id) { const o = EVOS[id]; return o ? 1 + Math.max(...o.map(([t]) => stagesBelow(t))) : 0; }
 
     for (let id = 1; id <= 898; id++) {
       if (!POKEMON_DB[id]) {
-        const isEvolved = EVOLVED_POKEMON_IDS.has(id);
-        POKEMON_DB[id] = {
-          name: `Pokémon #${id}`,
-          lineId: 1000 + id,
-          baseDps: Math.min(95, Math.round((isEvolved ? 30 : 14) + (id * 0.05))),
-          evolveLevel: null,
-          evolveTo: null
-        };
+        // Geen handmatige gegevens: basis-DPS op basis van stadium (en legendarisch of niet)
+        const stage = stageOf(id), below = stagesBelow(id);
+        let base;
+        if (LEGENDARY_IDS.has(id)) base = 78 + id * 0.03;
+        else if (stage === 0 && below === 0) base = 30;            // komt niet uit en evolueert niet
+        else if (below > 0) base = stage === 0 ? 13 : 26;           // basis- of tussenvorm
+        else base = stage === 1 ? 36 : 44;                          // eindvorm van 2 of 3 stadia
+        POKEMON_DB[id] = { name: `Pokémon #${id}`, baseDps: Math.min(LEGENDARY_IDS.has(id) ? 110 : 95, Math.round(base + id * 0.04)) };
       }
-    }
-
-    // Koppel voor niet-handmatig gekoppelde basis-Pokémon automatisch hun evolutie zodat alles door-evolueert!
-    for (let id = 1; id <= 897; id++) {
-      const cur = POKEMON_DB[id];
-      const next = POKEMON_DB[id + 1];
-      if (cur && next && cur.lineId >= 1000 && !cur.evolveTo && EVOLVED_POKEMON_IDS.has(id + 1)) {
-        cur.evolveTo = id + 1;
-        cur.evolveLevel = EVOLVED_POKEMON_IDS.has(id) ? 36 : 22;
-        next.lineId = cur.lineId;
-      }
+      const db = POKEMON_DB[id];
+      db.lineId = rootOf(id);       // familie = de basisvorm van de evolutielijn
+      delete db.evolveTo; delete db.evolveLevel;
     }
 
     // Haal alle 898 officiële namen op via PokéAPI
@@ -1259,10 +1257,43 @@
 
     applyBalance(AREAS);
 
+    // Zorg dat elke Pokémon te krijgen is: wat je niet kunt vangen of via evolutie kunt krijgen,
+    // komt erbij op een route (of bij de legendaries) van zijn eigen regio.
+    const GEN_REGION = [[151, "kanto"], [251, "johto"], [386, "hoenn"], [493, "sinnoh"], [649, "unova"], [721, "kalos"], [809, "alola"], [898, "galar"]];
+    function regionOfSpecies(id) { return GEN_REGION.find(([max]) => id <= max)[1]; }
+    (function ensureAllObtainable() {
+      const catchable = new Set();
+      AREAS.forEach(a => {
+        if (a.type === "gym" || a.type === "league") return;
+        [...(a.spawns || []), ...(a.rareStarters || []), ...(a.rareFossils || []), ...(a.rareMythicals || [])].forEach(id => catchable.add(id));
+        if (a.boss) catchable.add(a.boss.id);
+      });
+      const obtainable = new Set();
+      const walk = id => { if (obtainable.has(id)) return; obtainable.add(id); (EVOS[id] || []).forEach(([t]) => walk(t)); };
+      catchable.forEach(walk);
+      const missingRoots = [...new Set(Array.from({ length: 898 }, (_, i) => i + 1).filter(id => !obtainable.has(id)).map(rootOf))].sort((a, b) => a - b);
+      missingRoots.forEach(root => {
+        const region = regionOfSpecies(root);
+        if (LEGENDARY_IDS.has(root)) {
+          // legendaries: bij de zeldzame ontmoetingen op de laatste routes en dungeons van de regio
+          AREAS.filter(a => a.region === region && a.rareMythicals && a.rareMythicals.length && !a.optional)
+            .forEach(a => { if (!a.rareMythicals.includes(root)) a.rareMythicals.push(root); });
+          return;
+        }
+        // gewone Pokémon: verdeeld over de routes van de regio, lagere nummers eerder
+        const routes = AREAS.filter(a => a.region === region && a.type === "route");
+        const [lo, hi] = [GEN_REGION[GEN_REGION.findIndex(([, r]) => r === region) - 1]?.[0] ?? 0, GEN_REGION.find(([, r]) => r === region)[0]];
+        let idx = Math.min(routes.length - 1, Math.floor((root - lo - 1) / (hi - lo) * routes.length));
+        // liever een route met nog weinig soorten
+        for (let tries = 0; tries < routes.length && routes[idx].spawns.length >= 6; tries++) idx = (idx + 1) % routes.length;
+        if (!routes[idx].spawns.includes(root)) routes[idx].spawns.push(root);
+      });
+      window.__missingRootsAdded = missingRoots.length;
+    })();
+
     // ===================== 2c. WAAR KOM JE ELKE POKÉMON TEGEN? (voor de PokéDex) =====================
     // Kansen volgen exact rollWildEncounter(): eerst 2% mythical, dan tot 7% fossiel, dan tot 13% starter, rest wild.
     const ENCOUNTERS = {};
-    const PREVO = {};
     (function buildEncounterIndex() {
       const add = (id, area, kind, chance) => (ENCOUNTERS[id] ||= []).push({ areaId: area.id, kind, chance });
       AREAS.forEach(area => {
@@ -1281,10 +1312,6 @@
         wild.forEach(id => add(id, area, "wild", pWild / wild.length * wildShare));
         if (area.boss) add(area.boss.id, area, "boss", 1);
       });
-      for (const id in POKEMON_DB) {
-        const db = POKEMON_DB[id];
-        if (db.evolveTo && !PREVO[db.evolveTo]) PREVO[db.evolveTo] = { from: +id, level: db.evolveLevel };
-      }
     })();
     function totalWavesFor(area) { return area.waves ? area.waves.length : 5; }
 
@@ -1344,6 +1371,7 @@
       if (saved) {
         try { state = { ...state, ...JSON.parse(saved) }; } catch (e) { console.error(e); }
       }
+      migratePokedex();
       if (!AREAS.some(a => a.id === state.currentAreaId)) {
         let last = 0;
         AREAS.forEach((a, i) => { if (!a.optional && isAreaUnlocked(i)) last = i; });
@@ -1521,19 +1549,39 @@
     }, 15000);
 
     // ===================== 4. POKÉMON & SEPARATE SHINY OWNERSHIP =====================
-    function hasFamilyVariant(lineId, isShiny) {
-      const key = `${lineId}_${isShiny ? 'shiny' : 'normal'}`;
-      return state.team.some(m => POKEMON_DB[m.id] && POKEMON_DB[m.id].lineId === lineId && m.isShiny === isShiny) ||
-             state.pc.some(m => POKEMON_DB[m.id] && POKEMON_DB[m.id].lineId === lineId && m.isShiny === isShiny) ||
-             state.pokedex.includes(key);
+    // ---- Pokédex per soort (normaal en shiny apart) ----
+    function dexKey(id, isShiny) { return `sp_${id}_${isShiny ? "shiny" : "normal"}`; }
+    function isRegistered(id, isShiny) { return state.pokedex.includes(dexKey(id, isShiny)); }
+    function registerSpecies(id, isShiny) { const k = dexKey(id, isShiny); if (!state.pokedex.includes(k)) state.pokedex.push(k); }
+    function registeredCount() { return state.pokedex.filter(k => k.startsWith("sp_")).length; }
+    // Oude saves registreerden per familie; bouw de Pokédex opnieuw op uit wat je hebt (plus hun eerdere vormen)
+    function migratePokedex() {
+      [...state.team, ...state.pc].forEach(m => {
+        let c = m.id, n = 0;
+        while (c && n++ < 6) { registerSpecies(c, m.isShiny); c = PREVO[c] ? PREVO[c].from : null; }
+      });
+    }
+
+    function subtreeHasUnregistered(id, isShiny) {
+      return !isRegistered(id, isShiny) || (EVOS[id] || []).some(([t]) => subtreeHasUnregistered(t, isShiny));
+    }
+    function inSubtree(id, rootId) { let c = id, n = 0; while (c && n++ < 6) { if (c === rootId) return true; c = PREVO[c] ? PREVO[c].from : null; } return false; }
+    // Is deze wilde Pokémon de moeite waard? Ja als hij nieuw is, of als je nog een exemplaar nodig hebt
+    // voor een evolutietak die je nog mist (bijv. een tweede Eevee voor Jolteon).
+    function isWorthCatching(id, isShiny) {
+      if (!isRegistered(id, isShiny)) return true;
+      const owned = [...state.team, ...state.pc].filter(m => m.isShiny === isShiny);
+      const spareCopies = owned.filter(m => m.id === id).length;
+      const openBranches = (EVOS[id] || []).filter(([t]) =>
+        subtreeHasUnregistered(t, isShiny) && !owned.some(m => m.id !== id && inSubtree(m.id, t))).length;
+      return spareCopies < openBranches;
     }
 
     function addPokemonToPlayer(id, level, isShiny) {
       const cap = getCurrentCapInfo().cap;
       const db = POKEMON_DB[id];
       if (!db) return;
-      const key = `${db.lineId}_${isShiny ? 'shiny' : 'normal'}`;
-      if (!state.pokedex.includes(key)) state.pokedex.push(key);
+      registerSpecies(id, isShiny);
       const mon = { uid: Date.now() + Math.random(), id, level: Math.min(level, cap), xp: 0, isShiny };
       markSeen(id);
       if (state.team.length < 6) state.team.push(mon);
@@ -1569,19 +1617,62 @@
           mon.xp -= getXpNeeded(mon.level);
           mon.level++;
           changed = true;
-          const db = POKEMON_DB[mon.id];
-          if (db && db.evolveLevel && mon.level >= db.evolveLevel && db.evolveTo && POKEMON_DB[db.evolveTo]) {
-            const oldName = db.name;
-            mon.id = db.evolveTo;
-            markSeen(mon.id);
-            const newKey = `${POKEMON_DB[mon.id].lineId}_${mon.isShiny ? 'shiny' : 'normal'}`;
-            if (!state.pokedex.includes(newKey)) state.pokedex.push(newKey);
-            addLog(`✨ What?! Your ${oldName} evolved into ${POKEMON_DB[mon.id].name}!`);
+          const opts = evoOptions(mon.id);
+          if (opts.length === 1 && mon.level >= opts[0].level) {
+            evolveMon(mon, opts[0].to);
+          } else if (opts.length > 1 && opts.some(o => mon.level >= o.level) && !mon.evoNotified) {
+            mon.evoNotified = true;
+            addLog(`✨ Your ${POKEMON_DB[mon.id].name} is ready to evolve! Click <strong>✨ Evolve</strong> on it to choose.`);
           }
         }
         if (mon.level >= cap) mon.xp = 0;
       });
       if (changed) renderTeam();
+    }
+
+    function evolveMon(mon, toId) {
+      const oldName = POKEMON_DB[mon.id].name;
+      mon.id = toId;
+      mon.evoNotified = false;
+      markSeen(toId);
+      registerSpecies(toId, mon.isShiny);
+      addLog(`✨ What?! Your ${oldName} evolved into ${POKEMON_DB[toId].name}!`);
+    }
+    // Evoluties die deze Pokémon nu kan doen (level gehaald)
+    function availableEvolutions(mon) { return evoOptions(mon.id).filter(o => mon.level >= o.level); }
+
+    function openEvolve(uid, ev) {
+      if (ev) ev.stopPropagation();
+      const mon = findMon(uid);
+      if (!mon) return;
+      const all = evoOptions(mon.id);
+      document.getElementById("evolveTitle").textContent = `Evolve ${POKEMON_DB[mon.id].name} (Lv. ${mon.level})`;
+      document.getElementById("evolveOptions").innerHTML = all.map(o => {
+        const ready = mon.level >= o.level;
+        const got = isRegistered(o.to, mon.isShiny);
+        const preview = getPokemonDps({ ...mon, id: o.to });
+        return `<button ${ready ? `onclick="chooseEvolution(${mon.uid}, ${o.to})"` : "disabled"}
+            class="flex flex-col items-center p-2 rounded-xl border ${ready ? "border-fuchsia-500/60 bg-slate-950 hover:bg-fuchsia-950/40" : "border-slate-800 bg-slate-950 opacity-40 cursor-not-allowed"}">
+            <img src="${spriteSrc(o.to, mon.isShiny)}" class="w-16 h-16 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
+            <span class="text-xs font-bold text-white">${POKEMON_DB[o.to].name}</span>
+            <span class="text-[10px] font-mono text-emerald-400">⚔️ ${preview.toLocaleString("en-US")}</span>
+            <span class="text-[10px] ${got ? "text-slate-500" : "text-amber-300"}">${ready ? (got ? "✔ In Pokédex" : "🆕 New!") : `🔒 Needs Lv. ${o.level}`}</span>
+          </button>`;
+      }).join("");
+      document.getElementById("evolveModal").classList.remove("hidden");
+    }
+    function chooseEvolution(uid, toId) {
+      const mon = findMon(uid);
+      if (!mon || !availableEvolutions(mon).some(o => o.to === toId)) return;
+      evolveMon(mon, toId);
+      document.getElementById("evolveModal").classList.add("hidden");
+      saveGame();
+      updateAllUI();
+      renderPc();
+    }
+    function evolveButton(mon, small) {
+      if (!availableEvolutions(mon).length) return "";
+      return `<button onclick="openEvolve(${mon.uid}, event)" title="This Pokémon can evolve" class="${small ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"} font-bold rounded bg-fuchsia-700 hover:bg-fuchsia-600 text-white animate-pulse">✨ Evolve</button>`;
     }
 
     function getTonicCost() { return tonicCostFor(state.powerTonicLvl); }
@@ -1721,7 +1812,7 @@
 
       if (state.autoCatch && currentEnemy.canCatch) {
         const db = POKEMON_DB[currentEnemy.id];
-        if (db && !hasFamilyVariant(db.lineId, currentEnemy.isShiny)) attemptCatch(true);
+        if (db && isWorthCatching(currentEnemy.id, currentEnemy.isShiny)) attemptCatch(true);
       }
 
       if (area.type === "route") {
@@ -1777,8 +1868,8 @@
         return;
       }
       const db = POKEMON_DB[currentEnemy.id];
-      if (db && hasFamilyVariant(db.lineId, currentEnemy.isShiny)) {
-        if (!isAuto) addLog(`ℹ️ You already own the ${currentEnemy.isShiny ? "Shiny" : "Normal"} family of ${db.name}!`);
+      if (db && !isWorthCatching(currentEnemy.id, currentEnemy.isShiny)) {
+        if (!isAuto) addLog(`ℹ️ You already have ${currentEnemy.isShiny ? "a Shiny" : "a"} ${db.name} (and every evolution it leads to is covered)!`);
         return;
       }
 
@@ -1967,8 +2058,9 @@
       box.classList.remove("hidden");
 
       const lines = [];
-      const evoTo = db.evolveTo && POKEMON_DB[db.evolveTo]
-        ? `Evolves into <strong>${dexName(db.evolveTo)}</strong> at Lv. ${db.evolveLevel}.` : "";
+      const evoList = evoOptions(id);
+      const evoTo = evoList.length
+        ? `Evolves into ${evoList.map(o => `<strong>${dexName(o.to)}</strong> (Lv. ${o.level})`).join(evoList.length > 2 ? ", " : " or ")}${evoList.length > 1 ? " — you choose." : "."}` : "";
       const prevo = PREVO[id] ? `Evolves from <strong>${dexName(PREVO[id].from)}</strong> at Lv. ${PREVO[id].level}.` : "";
 
       const allEnc = (ENCOUNTERS[id] || []).slice().sort((a, b) =>
@@ -2012,8 +2104,8 @@
         }
       }
 
-      const hasNorm = state.pokedex.includes(`${db.lineId}_normal`) && isSeen(id);
-      const hasShiny = state.pokedex.includes(`${db.lineId}_shiny`) && isSeen(id);
+      const hasNorm = isRegistered(id, false) && isSeen(id);
+      const hasShiny = isRegistered(id, true) && isSeen(id);
       box.innerHTML = `
         <div class="flex items-start gap-3 mb-2">
           <img src="${spriteSrc(id, false)}" class="w-16 h-16 pixelated ${hasNorm ? "" : "brightness-0 opacity-30"}" />
@@ -2033,7 +2125,7 @@
     function renderPokedex() {
       const grid = document.getElementById("pokedexGrid");
       const query = (document.getElementById("dexSearchInput")?.value || "").trim().toLowerCase();
-      document.getElementById("pokedexStatsText").textContent = `Registered Family Variants: ${state.pokedex.length} / 1796`;
+      document.getElementById("pokedexStatsText").textContent = `Registered: ${registeredCount()} / 1796 (normal + shiny)`;
 
       const ranges = {
         1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493],
@@ -2052,8 +2144,8 @@
         }
 
         // De Pokédex registreert per evolutielijn; het plaatje kleurt pas in als je deze vorm ook gezien hebt
-        const hasNorm = state.pokedex.includes(`${db.lineId}_normal`) && isSeen(id);
-        const hasShiny = state.pokedex.includes(`${db.lineId}_shiny`) && isSeen(id);
+        const hasNorm = isRegistered(id, false) && isSeen(id);
+        const hasShiny = isRegistered(id, true) && isSeen(id);
         html.push(`
           <div onclick="selectDexEntry(${id})" class="cursor-pointer hover:bg-slate-800 bg-slate-950 border ${selectedDexId === id ? 'border-sky-400 ring-1 ring-sky-400' : hasNorm || hasShiny ? 'border-yellow-500/50' : 'border-slate-800'} rounded-xl p-2 flex flex-col items-center justify-between">
             <span class="text-[10px] text-slate-500 font-mono">#${id}</span>
@@ -2157,9 +2249,10 @@
       }
 
       const db = POKEMON_DB[currentEnemy.id];
-      const owned = db && hasFamilyVariant(db.lineId, currentEnemy.isShiny);
+      const isNew = db && !isRegistered(currentEnemy.id, currentEnemy.isShiny);
+      const worth = db && isWorthCatching(currentEnemy.id, currentEnemy.isShiny);
       document.getElementById("caughtIndicator").textContent = currentEnemy.canCatch
-        ? (owned ? (currentEnemy.isShiny ? "✨ Shiny Owned" : "✔ Normal Owned") : (currentEnemy.isShiny ? "✨ New Shiny!" : "🆕 New Line!"))
+        ? (isNew ? (currentEnemy.isShiny ? "✨ New Shiny!" : "🆕 New!") : worth ? "🧬 Needed for an evolution" : (currentEnemy.isShiny ? "✨ Shiny Owned" : "✔ Owned"))
         : "🔒 Trainer";
 
       document.getElementById("enemyName").textContent = (currentEnemy.isShiny ? "✨ " : "") + currentEnemy.name;
@@ -2178,7 +2271,7 @@
         previewEl.innerHTML = [...normalTags, ...starterTags, ...fossilTags, ...mythicalTags].map(item => {
           const sdb = POKEMON_DB[item.id];
           if (!sdb) return "";
-          const hasN = hasFamilyVariant(sdb.lineId, false);
+          const hasN = isRegistered(item.id, false);
           return `<span class="text-[10px] px-1.5 py-0.5 rounded border ${item.style}">${item.tag}${dexName(item.id)} ${hasN ? '✔' : ''}</span>`;
         }).join("");
       } else {
@@ -2242,7 +2335,7 @@
               </div>
               <div class="flex items-center justify-between text-[10px] text-slate-400 mt-0.5">
                 <span>⚔️ ${dps.toLocaleString()} DPS ${mon.isShiny ? '<strong class="text-yellow-400">(+75%)</strong>' : ''}</span>
-                <span>${atCap ? "MAX" : `${Math.floor(xpPct)}%`}</span>
+                <span class="flex items-center gap-1">${evolveButton(mon, true)}${atCap ? "MAX" : `${Math.floor(xpPct)}%`}</span>
               </div>
               <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
                 <div class="h-full ${atCap ? "bg-amber-400" : "bg-sky-500"}" style="width: ${xpPct}%"></div>
@@ -2361,11 +2454,33 @@
       renderPc();
     }
 
+    // Potentie: hoe sterk wordt deze Pokémon als hij volledig geëvolueerd is en op de huidige level cap zit?
+    function getFinalForm(id) {
+      // Bij vertakkingen: de sterkste eindvorm
+      const opts = EVOS[id];
+      if (!opts) return id;
+      return opts.map(([t]) => getFinalForm(t)).sort((a, b) => POKEMON_DB[b].baseDps - POKEMON_DB[a].baseDps)[0];
+    }
+    function getPotentialDps(mon) {
+      const cap = getCurrentCapInfo().cap;
+      return getPokemonDps({ ...mon, id: getFinalForm(mon.id), level: Math.max(mon.level, cap) });
+    }
+    // Welke evolutie-levels liggen nog boven de huidige cap? (dan kan dat pas later)
+    function nextEvolveLevelAboveCap(mon) {
+      const cap = getCurrentCapInfo().cap;
+      // Pad naar de sterkste eindvorm terugrekenen en kijken of een stap boven de cap ligt
+      const target = getFinalForm(mon.id);
+      let c = target, n = 0, highest = null;
+      while (c !== mon.id && PREVO[c] && n++ < 6) { if (PREVO[c].level > cap) highest = Math.max(highest || 0, PREVO[c].level); c = PREVO[c].from; }
+      return highest;
+    }
+
     function sortedFilteredPc() {
       const prefs = pcPrefs();
       const q = (document.getElementById("pcSearchInput")?.value || "").trim().toLowerCase();
       const key = {
         dps: m => getPokemonDps(m),
+        potential: m => getPotentialDps(m),
         dex: m => m.id,
         level: m => m.level,
         newest: m => m.uid
@@ -2377,13 +2492,20 @@
         .sort((a, b) => ((key(a) - key(b)) * prefs.dir) || (a.id - b.id));
     }
 
+    function potentialLine(mon) {
+      const finalId = getFinalForm(mon.id);
+      const later = nextEvolveLevelAboveCap(mon);
+      const tip = `Potential: ${POKEMON_DB[finalId].name} at Lv. ${Math.max(mon.level, getCurrentCapInfo().cap)}` + (later ? ` (needs Lv. ${later}, above your current cap)` : "");
+      return `<span title="${tip}" class="text-[9px] font-mono text-fuchsia-300 truncate w-full text-center">🚀 ${getPotentialDps(mon).toLocaleString("en-US")}${finalId !== mon.id ? ` → ${dexName(finalId)}` : ""}${later ? " 🔒" : ""}</span>`;
+    }
+
     function renderPc() {
       if (!isPcOpen()) return;
       pcNeedsRefresh = false;
       const prefs = pcPrefs();
 
       // knoppen-stijl
-      ["dps", "dex", "level", "newest"].forEach(k => {
+      ["dps", "potential", "dex", "level", "newest"].forEach(k => {
         const btn = document.getElementById(`pcSort-${k}`);
         const active = prefs.sort === k;
         const arrow = active ? (prefs.dir === 1 ? " ↑" : " ↓") : "";
@@ -2424,6 +2546,7 @@
             <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${POKEMON_DB[mon.id].name}</span>
             <span class="text-[10px] text-sky-400">Lv. ${mon.level}</span>
             <span class="text-[9px] font-mono text-emerald-400">⚔️ ${dps.toLocaleString("en-US")}</span>
+            ${swapMon ? "" : evolveButton(mon, true)}
             ${swapMon ? `<span class="text-[9px] font-mono font-bold ${diff >= 0 ? "text-emerald-300" : "text-red-400"}">${diff >= 0 ? "+" : ""}${diff.toLocaleString("en-US")}</span>` : ""}
           </div>`;
       });
@@ -2450,6 +2573,8 @@
             <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${POKEMON_DB[mon.id].name}</span>
             <span class="text-[10px] text-sky-400">Lv. ${mon.level}</span>
             <span class="text-[9px] font-mono text-emerald-400">⚔️ ${getPokemonDps(mon).toLocaleString("en-US")}</span>
+            ${prefs.sort === "potential" ? potentialLine(mon) : ""}
+            ${evolveButton(mon, true)}
           </div>`;
       }).join("");
     }
