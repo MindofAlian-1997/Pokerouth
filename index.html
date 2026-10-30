@@ -970,7 +970,8 @@
       { id: "k_d6", region: "kanto", type: "dungeon", name: "Seafoam Islands & Mansion", timer: 55, minLv: 38, maxLv: 42, baseHp: 2900, reward: 750, spawns: [58, 109, 120], rareFossils: [138, 140, 142], rareMythicals: [151], boss: { id: 144, title: "Legendary Articuno", lv: 44, hpMult: 4.0 } },
       { id: "k_g7", region: "kanto", type: "gym", name: "Cinnabar Gym (Blaine)", badgeId: "volcano", badgeName: "Volcano Badge", capLv: 47, timer: 55, baseHp: 4800, reward: 3000, waves: [{ id: 58, title: "Burglar's Growlithe", lv: 43 }, { id: 58, title: "Blaine's Growlithe", lv: 45 }, { id: 59, title: "Blaine's Arcanine (Ace)", lv: 47, isBoss: true }] },
       { id: "k_g8", region: "kanto", type: "gym", name: "Viridian Gym (Giovanni)", badgeId: "earth", badgeName: "Earth Badge", capLv: 50, timer: 60, baseHp: 7000, reward: 4000, waves: [{ id: 95, title: "Cooltrainer's Onix", lv: 46 }, { id: 111, title: "Giovanni's Rhyhorn", lv: 48 }, { id: 112, title: "Giovanni's Rhydon (Ace)", lv: 50, isBoss: true }] },
-      { id: "k_d7", region: "kanto", type: "dungeon", name: "Victory Road & Cerulean Cave", timer: 60, minLv: 47, maxLv: 51, baseHp: 8500, reward: 4800, spawns: [74, 111, 147], rareMythicals: [146, 150, 151], boss: { id: 150, title: "Legendary Mewtwo", lv: 53, hpMult: 4.5 } },
+      { id: "k_d7", region: "kanto", type: "dungeon", name: "Victory Road", timer: 60, minLv: 49, maxLv: 53, baseHp: 8500, reward: 4800, spawns: [66, 74, 111], rareMythicals: [146], boss: { id: 146, title: "Legendary Moltres", lv: 54, hpMult: 4.2 } },
+      { id: "k_d8", region: "kanto", type: "dungeon", name: "Cerulean Cave (Post-game)", optional: true, unlockAfter: "k_league", timer: 65, minLv: 55, maxLv: 58, baseHp: 10000, reward: 6000, spawns: [41, 132, 113, 147], rareMythicals: [151], boss: { id: 150, title: "Legendary Mewtwo", lv: 60, hpMult: 4.5 } },
       { id: "k_league", region: "kanto", type: "league", name: "Indigo Plateau (Kanto E4 & Champion)", badgeId: "kanto_champ", badgeName: "Kanto Champion Trophy", capLv: 55, timer: 65, baseHp: 10500, reward: 8000, waves: [{ id: 131, title: "E4 Lorelei's Lapras", lv: 52 }, { id: 68, title: "E4 Bruno's Machamp", lv: 53 }, { id: 94, title: "E4 Agatha's Gengar", lv: 54 }, { id: 149, title: "E4 Lance's Dragonite", lv: 55 }, { id: 6, title: "Champion Blue's Charizard", lv: 56, isBoss: true }] },
 
       // --- JOHTO ---
@@ -1063,7 +1064,10 @@
 
     function buildAllRegionsAndRoutes() {
       const specs = [
-        { reg: "kanto", prefix: "k_r", label: "Route", rStart: 1, rEnd: 28, pStart: 10, pEnd: 147, minLv: 2, maxLv: 52, startHp: 30, endHp: 8500, startGold: 10, endGold: 4500, starters: [1, 4, 7], fossils: [138, 140, 142], mythicals: [144, 145, 146, 150, 151] },
+        { reg: "kanto", prefix: "k_r", label: "Route", rStart: 1, rEnd: 25,
+          // Volgorde van de echte reis door Kanto: getallen = routes, tekst = gym/dungeon/league
+          layout: [1, 2, 22, "k_d1", "k_g1", 3, "k_d2", 4, "k_g2", 24, 25, 5, 6, "k_g3", 11, 9, 10, "k_d4", 8, 7, "k_g4", "k_d5",
+                   12, 13, 14, 15, "k_g5", 16, 17, 18, "k_g6", 19, 20, "k_d6", 21, "k_g7", "k_g8", 23, "k_d7", "k_league", "k_d8"], pStart: 10, pEnd: 147, minLv: 2, maxLv: 52, startHp: 30, endHp: 8500, startGold: 10, endGold: 4500, starters: [1, 4, 7], fossils: [138, 140, 142], mythicals: [144, 145, 146, 150, 151] },
         { reg: "johto", prefix: "j_r", label: "Route", rStart: 29, rEnd: 46, pStart: 161, pEnd: 246, minLv: 54, maxLv: 82, startHp: 12000, endHp: 68000, startGold: 4800, endGold: 22000, starters: [152, 155, 158], fossils: [], mythicals: [249, 250, 251] },
         { reg: "hoenn", prefix: "h_r", label: "Route", rStart: 101, rEnd: 134, pStart: 261, pEnd: 374, minLv: 84, maxLv: 116, startHp: 90000, endHp: 460000, startGold: 32000, endGold: 110000, starters: [252, 255, 258], fossils: [345, 347], mythicals: [382, 383, 384, 385, 386] },
         { reg: "sinnoh", prefix: "s_r", label: "Route", rStart: 201, rEnd: 230, pStart: 396, pEnd: 459, minLv: 118, maxLv: 155, startHp: 600000, endHp: 2350000, startGold: 145000, endGold: 500000, starters: [387, 390, 393], fossils: [408, 410], mythicals: [483, 484, 487, 490, 491, 492] },
@@ -1091,11 +1095,37 @@
         const nonLeagueMajors = regionMajors.filter(a => a.type !== "league");
         const leagueMajor = regionMajors.find(a => a.type === "league");
 
+        // Met een layout: routenummers in reisvolgorde, en levels netjes verdeeld tussen de level caps van de gyms
+        const routeOrder = s.layout ? s.layout.filter(t => typeof t === "number") : null;
+        const layoutLevels = {};
+        if (s.layout) {
+          let prevCap = 0, pending = [];
+          // Routes én dungeons tussen twee gyms krijgen oplopende levels; dungeons iets zwaarder
+          const flush = (nextCap) => {
+            pending.forEach((item, k) => {
+              const lv = Math.max(2, Math.floor(prevCap + (k + 1) / (pending.length + 1) * (nextCap - prevCap - 2)));
+              if (typeof item === "number") { layoutLevels[item] = lv; return; }
+              if (item.optional) return; // post-game houdt zijn eigen levels
+              item.minLv = lv; item.maxLv = lv + 3;
+              if (item.boss) item.boss.lv = lv + 4;
+            });
+            pending = [];
+          };
+          s.layout.forEach(t => {
+            if (typeof t === "number") { pending.push(t); return; }
+            const major = regionMajors.find(a => a.id === t);
+            if (!major) return;
+            if (major.capLv) { flush(major.capLv); prevCap = major.capLv; }
+            else pending.push(major);
+          });
+          flush(prevCap + 6);
+        }
+
         const routes = [];
         for (let i = 0; i < routeCount; i++) {
-          const rNum = s.rStart + i;
+          const rNum = routeOrder ? routeOrder[i] : s.rStart + i;
           const pct = routeCount > 1 ? i / (routeCount - 1) : 1;
-          const lv = Math.round(s.minLv + pct * (s.maxLv - s.minLv));
+          const lv = s.layout ? layoutLevels[rNum] : Math.round(s.minLv + pct * (s.maxLv - s.minLv));
           const hp = Math.round(s.startHp * Math.pow(s.endHp / s.startHp, pct));
           const gold = Math.round(s.startGold * Math.pow(s.endGold / s.startGold, pct));
 
@@ -1124,6 +1154,16 @@
             rareFossils: rareFossils,
             rareMythicals: rareMythicals
           });
+        }
+
+        if (s.layout) {
+          const used = new Set();
+          s.layout.forEach(t => {
+            const item = typeof t === "number" ? routes.find(r => r.id === `${s.prefix}${t}`) : regionMajors.find(a => a.id === t);
+            if (item) { fullList.push(item); used.add(item.id); }
+          });
+          regionMajors.filter(a => !used.has(a.id)).forEach(a => fullList.push(a)); // vangnet: niets vergeten
+          return;
         }
 
         const step = Math.max(1, Math.floor(routes.length / (nonLeagueMajors.length + 1)));
@@ -1305,7 +1345,10 @@
         try { state = { ...state, ...JSON.parse(saved) }; } catch (e) { console.error(e); }
       }
       if (!AREAS.some(a => a.id === state.currentAreaId)) {
-        state.currentAreaId = "k_r1";
+        let last = 0;
+        AREAS.forEach((a, i) => { if (!a.optional && isAreaUnlocked(i)) last = i; });
+        state.currentAreaId = AREAS[last].id;
+        state.region = AREAS[last].region;
       }
       if (!state.firebaseUrl && DEFAULT_FIREBASE_URL) {
         state.firebaseUrl = DEFAULT_FIREBASE_URL;
@@ -1568,10 +1611,31 @@
     function getArea(areaId) { return AREAS.find(a => a.id === areaId) || AREAS[0]; }
 
     function isAreaUnlocked(index) {
+      const area = AREAS[index];
+      // Post-game gebieden (zoals Cerulean Cave) liggen buiten de hoofdroute
+      if (area.optional) return !!state.clearedAreas[area.unlockAfter];
       if (index === 0) return true;
-      const prevArea = AREAS[index - 1];
+      // Oude saves: alles tot en met je verste voortgang blijft open, ook als de volgorde veranderd is
+      if (index <= getProgressFloor() + 1) return true;
+      let j = index - 1;
+      while (j > 0 && AREAS[j].optional) j--;
+      const prevArea = AREAS[j];
       if (prevArea.type === "route") return (state.routeKills[prevArea.id] || 0) >= 10;
       return !!state.clearedAreas[prevArea.id];
+    }
+
+    let progressFloorCache = { key: "", value: -1 };
+    function getProgressFloor() {
+      const key = Object.keys(state.routeKills).length + "|" + Object.keys(state.clearedAreas).length;
+      if (progressFloorCache.key === key) return progressFloorCache.value;
+      let floor = -1;
+      AREAS.forEach((a, i) => {
+        if (a.optional) return;
+        const done = a.type === "route" ? (state.routeKills[a.id] || 0) >= 10 : !!state.clearedAreas[a.id];
+        if (done) floor = i;
+      });
+      progressFloorCache = { key, value: floor };
+      return floor;
     }
 
     function enterArea(areaId) {
@@ -2146,7 +2210,7 @@
                 <span class="text-xs font-bold text-white">${area.name}</span>
               </div>
               <div class="text-[10px] text-slate-400 mt-0.5">
-                ${area.capLv ? `Level Cap: Lv. ${area.capLv} • ${area.badgeName}` : `Lv. ${area.minLv}-${area.maxLv}`}
+                ${area.capLv ? `Level Cap: Lv. ${area.capLv} • ${area.badgeName}` : `Lv. ${area.minLv}-${area.maxLv}`}${area.optional ? ` • 🌙 Post-game: unlocks after the ${getArea(area.unlockAfter).name.split(" (")[0]}` : ""}
               </div>
             </div>
             <div class="text-xs font-bold ${cleared ? "text-emerald-400" : "text-slate-500"}">${cleared ? "✔" : ""}</div>
