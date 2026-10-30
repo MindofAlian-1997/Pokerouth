@@ -1687,8 +1687,20 @@
           spawnEnemy();
         }
       }
-      updateAllUI();
-      saveGame();
+      // Niet bij elke kill alles opnieuw tekenen/opslaan: bij hoge DPS gebeurt dat 10× per seconde
+      scheduleUiUpdate();
+      scheduleSave();
+    }
+
+    let uiUpdateTimer = null;
+    function scheduleUiUpdate() {
+      if (uiUpdateTimer) return;
+      uiUpdateTimer = setTimeout(() => { uiUpdateTimer = null; updateAllUI(); }, 250);
+    }
+    let saveTimer = null;
+    function scheduleSave() {
+      if (saveTimer) return;
+      saveTimer = setTimeout(() => { saveTimer = null; saveGame(); }, 2000);
     }
 
     function selectBall(type) { state.selectedBall = type; updateBallButtons(); }
@@ -1742,7 +1754,7 @@
 
     // ===================== 6. DRAG & DROP =====================
     function allowDrop(ev) { ev.preventDefault(); }
-    function dragStart(ev, uid, fromPc) { ev.dataTransfer.setData("text/plain", JSON.stringify({ uid, fromPc })); }
+    function dragStart(ev, uid, fromPc) { isDraggingMon = true; ev.dataTransfer.setData("text/plain", JSON.stringify({ uid, fromPc })); }
 
     function dropOnTeam(ev) {
       ev.preventDefault();
@@ -1993,6 +2005,36 @@
       grid.innerHTML = html.join("");
       if (selectedDexId) renderDexDetail(selectedDexId);
     }
+
+    // ===================== 7a. RUSTIG SCHERM: alleen opnieuw tekenen als er echt iets veranderd is =====================
+    // Zonder dit worden knoppen (zoals routes) vervangen terwijl je klikt, en mis je je klik.
+    let isDraggingMon = false;
+    (function stabilizeLists() {
+      const nativeHtml = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
+      ["areaList", "teamList", "badgeContainer", "pcPreview", "waveDots", "areaSpawnsPreview"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        let last = null, pending = null;
+        Object.defineProperty(el, "innerHTML", {
+          configurable: true,
+          get() { return nativeHtml.get.call(this); },
+          set(html) {
+            if (id === "teamList" && isDraggingMon) { pending = html; return; } // niet verversen tijdens slepen
+            if (html === last) return;
+            last = html;
+            nativeHtml.set.call(this, html);
+          }
+        });
+        el.addEventListener("flushPending", () => { if (pending !== null) { const h = pending; pending = null; el.innerHTML = h; } });
+      });
+      document.addEventListener("dragend", () => {
+        isDraggingMon = false;
+        document.getElementById("teamList")?.dispatchEvent(new Event("flushPending"));
+      });
+    })();
+    // Bij afsluiten of wegklikken altijd direct opslaan
+    window.addEventListener("pagehide", () => saveGame());
+    document.addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });
 
     function addLog(msg) {
       const box = document.getElementById("battleLog");
