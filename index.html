@@ -177,6 +177,32 @@
 
   <div id="celebrateLayer" aria-live="polite"></div>
 
+  <!-- Reset Modal -->
+  <div id="resetModal" class="fixed inset-0 bg-slate-950/90 z-[70] hidden flex items-center justify-center p-4" onclick="if (event.target === this) closeResetModal()">
+    <div class="bg-slate-900 border-2 border-red-500 rounded-2xl max-w-lg w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-extrabold text-sm text-red-300">⚠️ Reset all progress</h2>
+        <button onclick="closeResetModal()" class="text-xs text-slate-400 hover:text-white">Cancel ✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300 mb-2"><strong>Step 1 — make a backup.</strong> This code contains your whole save. Keep it somewhere safe.</p>
+      <textarea id="resetBackupBox" readonly onclick="this.select()" class="w-full h-20 bg-slate-950 border border-slate-700 rounded-lg p-2 text-[10px] font-mono text-slate-300 resize-none mb-2"></textarea>
+      <div class="flex flex-wrap gap-2 mb-1">
+        <button onclick="copyBackup()" class="bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">📋 Copy backup code</button>
+        <button onclick="downloadBackup()" class="bg-sky-900 hover:bg-sky-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg">💾 Download backup file</button>
+        <span id="backupStatus" class="text-[11px] text-emerald-400 self-center"></span>
+      </div>
+      <p class="text-[10px] text-slate-500 mb-4">To restore it later: open ☁️ Cloud Save, paste the code and press <em>Load Code</em>.</p>
+
+      <p class="text-xs text-slate-300 mb-2"><strong>Step 2 — reset.</strong> This deletes your save on this device. It cannot be undone without your backup.</p>
+      <label class="flex items-center gap-2 text-xs text-slate-300 mb-3 cursor-pointer">
+        <input type="checkbox" id="resetConfirmCheck" onchange="document.getElementById('resetConfirmBtn').disabled = !this.checked" class="accent-red-500">
+        I have saved my backup (or I don't need one)
+      </label>
+      <button id="resetConfirmBtn" onclick="doReset()" disabled class="w-full bg-red-600 hover:bg-red-500 disabled:bg-slate-800 disabled:text-slate-500 text-white text-xs font-bold py-2 rounded-lg">🗑️ Reset everything and start over</button>
+    </div>
+  </div>
+
   <!-- Evolution Choice Modal -->
   <div id="evolveModal" class="fixed inset-0 bg-slate-950/90 z-[60] hidden flex items-center justify-center p-4" onclick="if (event.target === this) this.classList.add('hidden')">
     <div class="bg-slate-900 border-2 border-fuchsia-500 rounded-2xl max-w-xl w-full p-5 shadow-2xl">
@@ -272,7 +298,7 @@
         </div>
         <button onclick="toggleSound()" id="soundBtn" title="Sound effects on/off" class="text-xs font-bold text-slate-300 hover:text-white bg-slate-800/80 border border-slate-700 px-2.5 py-1.5 rounded-lg">🔊</button>
         <button onclick="goFullscreen()" title="Play fullscreen" class="text-xs font-bold text-sky-300 hover:text-sky-200 bg-sky-950/60 border border-sky-700 px-2.5 py-1.5 rounded-lg">⛶ Fullscreen</button>
-        <button onclick="resetSave()" class="text-xs text-red-400 hover:text-red-300 bg-red-950/40 border border-red-800/60 px-2.5 py-1.5 rounded-lg">Reset</button>
+        <button onclick="openResetModal()" class="text-xs text-red-400 hover:text-red-300 bg-red-950/40 border border-red-800/60 px-2.5 py-1.5 rounded-lg">Reset</button>
       </div>
     </div>
   </header>
@@ -1642,19 +1668,57 @@
     }
 
     function saveGame() {
+      if (resetting) return;
       storageSet("pokemon_route_idle_v7", JSON.stringify(state));
       if (state.cloudUser) {
         storageSet(`cloud_save_${state.cloudUser}`, JSON.stringify(state));
       }
     }
 
-    function resetSave() {
-      if (confirm("Are you sure you want to reset all progress?")) {
-        storageRemove("pokemon_route_idle_v7");
-        window.__INITIAL_SAVE__ = null;
-        location.reload();
+    // ---- Reset met backup ----
+    let resetting = false; // tijdens een reset niets meer opslaan (anders zet "opslaan bij afsluiten" de oude save terug)
+    function makeSaveCode() { return btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
+    function openResetModal() {
+      saveGame();
+      document.getElementById("resetBackupBox").value = makeSaveCode();
+      document.getElementById("resetConfirmCheck").checked = false;
+      document.getElementById("resetConfirmBtn").disabled = true;
+      document.getElementById("backupStatus").textContent = "";
+      document.getElementById("resetModal").classList.remove("hidden");
+    }
+    function closeResetModal() { document.getElementById("resetModal").classList.add("hidden"); }
+    function copyBackup() {
+      const box = document.getElementById("resetBackupBox");
+      box.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      if (!ok && navigator.clipboard) navigator.clipboard.writeText(box.value).then(() => {}, () => {});
+      document.getElementById("backupStatus").textContent = "✔ Copied! Paste it somewhere safe.";
+    }
+    function downloadBackup() {
+      const code = document.getElementById("resetBackupBox").value;
+      const date = new Date().toISOString().slice(0, 10);
+      try {
+        const url = URL.createObjectURL(new Blob([code], { type: "text/plain" }));
+        const a = document.createElement("a");
+        a.href = url; a.download = `pokemon-route-idle-backup-${date}.txt`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        document.getElementById("backupStatus").textContent = "✔ Download started.";
+      } catch (e) {
+        document.getElementById("backupStatus").textContent = "Download blocked here — use Copy instead.";
       }
     }
+    function doReset() {
+      if (!document.getElementById("resetConfirmCheck").checked) return;
+      resetting = true;
+      storageRemove("pokemon_route_idle_v7");
+      if (state.cloudUser) storageRemove(`cloud_save_${state.cloudUser}`); // ook de lokale kopie van je profiel
+      window.__INITIAL_SAVE__ = null;
+      location.reload();
+    }
+    // (oude naam, voor de zekerheid)
+    function resetSave() { openResetModal(); }
 
     function chooseStarter(id) {
       state.starterChosen = true;
@@ -1778,7 +1842,9 @@
       try {
         const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
         state = { ...state, ...decoded };
+        migratePokedex();
         saveGame();
+        if (state.starterChosen) document.getElementById("starterModal").classList.add("hidden");
         enterArea(state.currentAreaId);
         updateAllUI();
         document.getElementById("cloudModal").classList.add("hidden");
