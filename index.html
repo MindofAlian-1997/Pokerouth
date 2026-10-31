@@ -1607,6 +1607,7 @@
       let changed = false;
 
       state.team.forEach(mon => {
+        if (tryAutoEvolve(mon)) changed = true;
         if (mon.level >= cap) { mon.level = cap; mon.xp = 0; return; }
         const enemyDb = currentEnemy ? POKEMON_DB[currentEnemy.id] : null;
         const teamDb = POKEMON_DB[mon.id];
@@ -1617,17 +1618,38 @@
           mon.xp -= getXpNeeded(mon.level);
           mon.level++;
           changed = true;
-          const opts = evoOptions(mon.id);
-          if (opts.length === 1 && mon.level >= opts[0].level) {
-            evolveMon(mon, opts[0].to);
-          } else if (opts.length > 1 && opts.some(o => mon.level >= o.level) && !mon.evoNotified) {
-            mon.evoNotified = true;
-            addLog(`✨ Your ${POKEMON_DB[mon.id].name} is ready to evolve! Click <strong>✨ Evolve</strong> on it to choose.`);
-          }
+          tryAutoEvolve(mon);
         }
         if (mon.level >= cap) mon.xp = 0;
       });
       if (changed) renderTeam();
+    }
+
+    // ---- Evoluties per regio: een evolutie uit een latere generatie gaat pas open als je die regio bereikt hebt ----
+    const REGION_UNLOCK = { johto: "k_league", hoenn: "johto_league", sinnoh: "hoenn_league", unova: "sinnoh_league", kalos: "unova_league", alola: "kalos_league", galar: "alola_league" };
+    function regionReached(region) { return region === "kanto" || !!state.clearedAreas[REGION_UNLOCK[region]]; }
+    function evolutionRegion(toId) { return regionOfSpecies(toId); }
+    function evolutionRegionOk(toId) { return regionReached(evolutionRegion(toId)); }
+    function capitalize(r) { return r.charAt(0).toUpperCase() + r.slice(1); }
+
+    // Eén evolutie, level en regio in orde → automatisch evolueren (ook als hij al op de level cap zit)
+    function tryAutoEvolve(mon) {
+      let evolved = false;
+      for (let n = 0; n < 3; n++) {
+        const opts = evoOptions(mon.id);
+        if (opts.length === 1 && mon.level >= opts[0].level) {
+          if (evolutionRegionOk(opts[0].to)) { evolveMon(mon, opts[0].to); evolved = true; continue; }
+          if (mon.evoNotified !== "region") {
+            mon.evoNotified = "region";
+            addLog(`🗺️ Your ${POKEMON_DB[mon.id].name} could evolve further, but that evolution is only found in ${capitalize(evolutionRegion(opts[0].to))}. Reach that region to unlock it!`);
+          }
+        } else if (opts.length > 1 && availableEvolutions(mon).length && mon.evoNotified !== true) {
+          mon.evoNotified = true;
+          addLog(`✨ Your ${POKEMON_DB[mon.id].name} is ready to evolve! Click <strong>✨ Evolve</strong> on it to choose.`);
+        }
+        break;
+      }
+      return evolved;
     }
 
     function evolveMon(mon, toId) {
@@ -1639,7 +1661,7 @@
       addLog(`✨ What?! Your ${oldName} evolved into ${POKEMON_DB[toId].name}!`);
     }
     // Evoluties die deze Pokémon nu kan doen (level gehaald)
-    function availableEvolutions(mon) { return evoOptions(mon.id).filter(o => mon.level >= o.level); }
+    function availableEvolutions(mon) { return evoOptions(mon.id).filter(o => mon.level >= o.level && evolutionRegionOk(o.to)); }
 
     function openEvolve(uid, ev) {
       if (ev) ev.stopPropagation();
@@ -1648,15 +1670,17 @@
       const all = evoOptions(mon.id);
       document.getElementById("evolveTitle").textContent = `Evolve ${POKEMON_DB[mon.id].name} (Lv. ${mon.level})`;
       document.getElementById("evolveOptions").innerHTML = all.map(o => {
-        const ready = mon.level >= o.level;
+        const regionOk = evolutionRegionOk(o.to);
+        const ready = mon.level >= o.level && regionOk;
         const got = isRegistered(o.to, mon.isShiny);
+        const lockText = !regionOk ? `🗺️ Reach ${capitalize(evolutionRegion(o.to))}` : `🔒 Needs Lv. ${o.level}`;
         const preview = getPokemonDps({ ...mon, id: o.to });
         return `<button ${ready ? `onclick="chooseEvolution(${mon.uid}, ${o.to})"` : "disabled"}
             class="flex flex-col items-center p-2 rounded-xl border ${ready ? "border-fuchsia-500/60 bg-slate-950 hover:bg-fuchsia-950/40" : "border-slate-800 bg-slate-950 opacity-40 cursor-not-allowed"}">
             <img src="${spriteSrc(o.to, mon.isShiny)}" class="w-16 h-16 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
-            <span class="text-xs font-bold text-white">${POKEMON_DB[o.to].name}</span>
+            <span class="text-xs font-bold text-white">${regionOk ? POKEMON_DB[o.to].name : dexName(o.to)}</span>
             <span class="text-[10px] font-mono text-emerald-400">⚔️ ${preview.toLocaleString("en-US")}</span>
-            <span class="text-[10px] ${got ? "text-slate-500" : "text-amber-300"}">${ready ? (got ? "✔ In Pokédex" : "🆕 New!") : `🔒 Needs Lv. ${o.level}`}</span>
+            <span class="text-[10px] ${got ? "text-slate-500" : "text-amber-300"}">${ready ? (got ? "✔ In Pokédex" : "🆕 New!") : lockText}</span>
           </button>`;
       }).join("");
       document.getElementById("evolveModal").classList.remove("hidden");
@@ -1671,7 +1695,11 @@
       renderPc();
     }
     function evolveButton(mon, small) {
-      if (!availableEvolutions(mon).length) return "";
+      if (!availableEvolutions(mon).length) {
+        // Level gehaald maar regio nog dicht: klein grijs knopje dat uitlegt waarom
+        const waiting = evoOptions(mon.id).some(o => mon.level >= o.level);
+        return waiting ? `<button onclick="openEvolve(${mon.uid}, event)" title="Evolution locked until you reach a later region" class="text-[9px] px-1.5 py-0.5 font-bold rounded bg-slate-800 text-slate-400">🗺️ Evo</button>` : "";
+      }
       return `<button onclick="openEvolve(${mon.uid}, event)" title="This Pokémon can evolve" class="${small ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"} font-bold rounded bg-fuchsia-700 hover:bg-fuchsia-600 text-white animate-pulse">✨ Evolve</button>`;
     }
 
@@ -1955,7 +1983,7 @@
     }
 
     function switchRegion(reg) {
-      const regionLocks = { johto: "k_league", hoenn: "johto_league", sinnoh: "hoenn_league", unova: "sinnoh_league", kalos: "unova_league", alola: "kalos_league", galar: "alola_league" };
+      const regionLocks = REGION_UNLOCK;
       if (reg !== "kanto" && !state.clearedAreas[regionLocks[reg]]) {
         addLog(`🔒 Defeat the previous region's Champion League to unlock ${reg.toUpperCase()}!`);
         return;
@@ -2060,7 +2088,7 @@
       const lines = [];
       const evoList = evoOptions(id);
       const evoTo = evoList.length
-        ? `Evolves into ${evoList.map(o => `<strong>${dexName(o.to)}</strong> (Lv. ${o.level})`).join(evoList.length > 2 ? ", " : " or ")}${evoList.length > 1 ? " — you choose." : "."}` : "";
+        ? `Evolves into ${evoList.map(o => `<strong>${dexName(o.to)}</strong> (Lv. ${o.level}${evolutionRegion(o.to) !== regionOfSpecies(id) ? `, ${capitalize(evolutionRegion(o.to))}+` : ""})`).join(evoList.length > 2 ? ", " : " or ")}${evoList.length > 1 ? " — you choose." : "."}` : "";
       const prevo = PREVO[id] ? `Evolves from <strong>${dexName(PREVO[id].from)}</strong> at Lv. ${PREVO[id].level}.` : "";
 
       const allEnc = (ENCOUNTERS[id] || []).slice().sort((a, b) =>
@@ -2680,7 +2708,7 @@
         document.getElementById("shinyCharmCost").textContent = `₽ ${nextCost.toLocaleString("en-US")} (${nextOdds})`;
       }
 
-      const locks = { johto: "k_league", hoenn: "johto_league", sinnoh: "hoenn_league", unova: "sinnoh_league", kalos: "unova_league", alola: "kalos_league", galar: "alola_league" };
+      const locks = REGION_UNLOCK;
       ["kanto", "johto", "hoenn", "sinnoh", "unova", "kalos", "alola", "galar"].forEach(reg => {
         const tab = document.getElementById(`tab-${reg}`);
         const unlocked = reg === "kanto" || !!state.clearedAreas[locks[reg]];
