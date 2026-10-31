@@ -178,6 +178,28 @@
 
   <div id="celebrateLayer" aria-live="polite"></div>
 
+  <!-- Leaderboard Modal -->
+  <div id="leaderModal" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex items-center justify-center p-4" onclick="if (event.target === this) closeLeaderboard()">
+    <div class="bg-slate-900 border-2 border-violet-500 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="pixel-font text-base text-violet-300">🏆 Highscores</h2>
+        <button onclick="closeLeaderboard()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg">Close [X]</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <label class="text-xs text-slate-300">Your name:</label>
+        <input id="leaderNameInput" maxlength="16" placeholder="Trainer name" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500 w-36" />
+        <button onclick="saveLeaderName()" class="bg-violet-700 hover:bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-lg">Save & submit</button>
+        <span id="leaderStatus" class="text-[11px] text-slate-400"></span>
+      </div>
+      <div class="flex gap-1.5 mb-2">
+        <button onclick="setLeaderTab('dex')" id="leaderTab-dex" class="px-3 py-1.5 rounded text-xs font-bold">📖 Pokédex</button>
+        <button onclick="setLeaderTab('shiny')" id="leaderTab-shiny" class="px-3 py-1.5 rounded text-xs font-bold">✨ Shinies</button>
+        <button onclick="refreshLeaderboard()" class="ml-auto px-3 py-1.5 rounded text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300">⟳ Refresh</button>
+      </div>
+      <div id="leaderList" class="flex-1 overflow-y-auto space-y-1 pr-1 min-h-[200px]"></div>
+    </div>
+  </div>
+
   <!-- Reset Modal -->
   <div id="resetModal" class="fixed inset-0 bg-slate-950/90 z-[70] hidden flex items-center justify-center p-4" onclick="if (event.target === this) closeResetModal()">
     <div class="bg-slate-900 border-2 border-red-500 rounded-2xl max-w-lg w-full p-5 shadow-2xl">
@@ -284,6 +306,9 @@
         </button>
         <button onclick="openPokedex()" class="bg-yellow-950 hover:bg-yellow-900 border border-yellow-700 text-yellow-300 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
           <span>📖</span> PokéDex (1018)
+        </button>
+        <button onclick="openLeaderboard()" class="bg-violet-950 hover:bg-violet-900 border border-violet-700 text-violet-200 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+          <span>🏆</span> Highscores
         </button>
         <div class="bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
           <span class="text-yellow-400 font-bold">₽</span>
@@ -1634,7 +1659,7 @@
     function totalWavesFor(area) { return area.waves ? area.waves.length : 5; }
 
     // ===================== 3. GAME STATE & CLOUD SYNC =====================
-    const DEFAULT_FIREBASE_URL = "https://pokerouth-5bdca-default-rtdb.europe-west1.firebasedatabase.app";
+    const DEFAULT_FIREBASE_URL = "";
     let currentDexGen = 1;
 
     let state = {
@@ -1648,6 +1673,8 @@
       shinyCharmTier: 0,
       powerTonicLvl: 0,
       amuletLvl: 0,
+      playerId: "",
+      leaderName: "",
       autoCatch: false,
       badges: [],
       clearedAreas: {},
@@ -1725,6 +1752,111 @@
       if (state.cloudUser) {
         storageSet(`cloud_save_${state.cloudUser}`, JSON.stringify(state));
       }
+    }
+
+    // ===================== HIGHSCORES (gedeeld via Firebase) =====================
+    // Elke speler schrijft /leaderboard/<playerId> = { name, dex, shinies, badges, updated }.
+    // Voor een gedeelde lijst moet iedereen dezelfde database gebruiken: zet je Firebase-URL in DEFAULT_FIREBASE_URL.
+    let leaderTab = "dex", leaderData = null, lastLeaderSubmit = 0, lastLeaderKey = "";
+    function leaderDbUrl() { return (DEFAULT_FIREBASE_URL || state.firebaseUrl || "").trim().replace(/\/+$/, ""); }
+    function myPlayerId() {
+      if (!state.playerId) state.playerId = "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      return state.playerId;
+    }
+    function myScores() {
+      let dex = 0, shinies = 0;
+      state.pokedex.forEach(k => { if (k.endsWith("_normal") && k.startsWith("sp_")) dex++; else if (k.endsWith("_shiny") && k.startsWith("sp_")) shinies++; });
+      return { dex, shinies, badges: state.badges.length };
+    }
+    function cleanName(n) { return (n || "").replace(/[<>"'&]/g, "").trim().slice(0, 16); }
+    async function submitLeaderboard(force = false) {
+      const url = leaderDbUrl();
+      const name = cleanName(state.leaderName || state.cloudUser);
+      if (!url.startsWith("https://") || !name || !state.starterChosen) return false;
+      const sc = myScores();
+      const key = `${name}|${sc.dex}|${sc.shinies}|${sc.badges}`;
+      if (!force && (key === lastLeaderKey || Date.now() - lastLeaderSubmit < 60000)) return false;
+      try {
+        const res = await fetch(`${url}/leaderboard/${myPlayerId()}.json`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, dex: sc.dex, shinies: sc.shinies, badges: sc.badges, updated: Date.now() })
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        lastLeaderSubmit = Date.now(); lastLeaderKey = key;
+        return true;
+      } catch (e) { return false; }
+    }
+    // automatisch elke minuut je score bijwerken (alleen als er iets veranderd is)
+    setInterval(() => { submitLeaderboard(false); }, 60000);
+
+    function openLeaderboard() {
+      document.getElementById("leaderNameInput").value = cleanName(state.leaderName || state.cloudUser);
+      document.getElementById("leaderModal").classList.remove("hidden");
+      setLeaderTab(leaderTab);
+      refreshLeaderboard();
+    }
+    function closeLeaderboard() { document.getElementById("leaderModal").classList.add("hidden"); }
+    function setLeaderTab(tab) {
+      leaderTab = tab;
+      ["dex", "shiny"].forEach(t => {
+        document.getElementById(`leaderTab-${t}`).className = `px-3 py-1.5 rounded text-xs font-bold ${t === tab ? "bg-violet-500 text-slate-950" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`;
+      });
+      renderLeaderboard();
+    }
+    async function saveLeaderName() {
+      const name = cleanName(document.getElementById("leaderNameInput").value);
+      if (!name) { document.getElementById("leaderStatus").textContent = "Enter a name first."; return; }
+      state.leaderName = name; saveGame();
+      await refreshLeaderboard(true);
+    }
+    async function refreshLeaderboard(forceSubmit = true) {
+      const status = document.getElementById("leaderStatus");
+      const url = leaderDbUrl();
+      if (!url.startsWith("https://")) {
+        leaderData = null;
+        status.textContent = "";
+        document.getElementById("leaderList").innerHTML = `<div class="text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-lg p-3">
+          The highscores need a shared online database.<br><br>The game owner sets this up once: create a free Firebase Realtime Database and put its URL in
+          <code class="text-amber-300">DEFAULT_FIREBASE_URL</code> in the code. Then everyone playing this game shares one highscore list.</div>`;
+        return;
+      }
+      status.textContent = "⏳ Loading…";
+      if (forceSubmit) await submitLeaderboard(true);
+      try {
+        const res = await fetch(`${url}/leaderboard.json`);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json() || {};
+        leaderData = Object.entries(data).map(([id, v]) => ({ id, name: cleanName(v && v.name) || "???", dex: +(v && v.dex) || 0, shinies: +(v && v.shinies) || 0, badges: +(v && v.badges) || 0, updated: +(v && v.updated) || 0 }))
+          .filter(r => r.dex <= TOTAL_SPECIES && r.shinies <= TOTAL_SPECIES);
+        status.textContent = cleanName(state.leaderName || state.cloudUser) ? `${leaderData.length} trainers` : "Enter your name to join the list!";
+      } catch (e) {
+        leaderData = null;
+        status.textContent = "⚠️ Could not reach the database.";
+      }
+      renderLeaderboard();
+    }
+    function renderLeaderboard() {
+      const box = document.getElementById("leaderList");
+      if (!leaderData) return;
+      const key = leaderTab === "dex" ? "dex" : "shinies";
+      const rows = [...leaderData].sort((a, b) => b[key] - a[key] || (leaderTab === "dex" ? b.shinies - a.shinies : b.dex - a.dex) || a.updated - b.updated).slice(0, 100);
+      if (!rows.length) { box.innerHTML = `<div class="text-xs text-slate-400 p-3">No trainers yet. Be the first!</div>`; return; }
+      const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
+      box.innerHTML = rows.map((r, i) => {
+        const me = r.id === state.playerId;
+        const main = leaderTab === "dex" ? `${r.dex} / ${TOTAL_SPECIES}` : `✨ ${r.shinies}`;
+        const sub = leaderTab === "dex" ? `✨ ${r.shinies} shinies • 🏅 ${r.badges}` : `📖 ${r.dex} caught • 🏅 ${r.badges}`;
+        const pctBar = leaderTab === "dex" ? Math.round(r.dex / TOTAL_SPECIES * 100) : 0;
+        return `<div class="flex items-center gap-3 rounded-lg px-3 py-2 border ${me ? "border-violet-400 bg-violet-950/50" : "border-slate-800 bg-slate-950"}">
+            <span class="w-8 text-center text-sm font-bold ${i < 3 ? "" : "text-slate-500"}">${medal(i)}</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold text-white truncate">${r.name}${me ? ' <span class="text-violet-300">(you)</span>' : ""}</div>
+              <div class="text-[10px] text-slate-400">${sub}</div>
+              ${leaderTab === "dex" ? `<div class="h-1 bg-slate-800 rounded mt-1 overflow-hidden"><div class="h-full bg-amber-400" style="width:${pctBar}%"></div></div>` : ""}
+            </div>
+            <span class="text-sm font-extrabold ${leaderTab === "dex" ? "text-amber-300" : "text-yellow-300"}">${main}</span>
+          </div>`;
+      }).join("");
     }
 
     // ---- Master Ball als beloning voor elke League die je voor het eerst verslaat ----
