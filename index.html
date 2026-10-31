@@ -448,9 +448,10 @@
             <div id="tonicTitleText" class="font-bold text-emerald-300">💪 Power Tonic (Lv. 0)</div>
             <div id="tonicCostText" class="text-yellow-400 font-semibold">₽ 100</div>
           </button>
-          <button onclick="buyUpgrade('expShare')" class="bg-sky-950/60 hover:bg-sky-900/70 border border-sky-500/60 rounded-lg p-2 text-center">
-            <div id="expTitleText" class="font-bold text-sky-300">📘 Exp. Share+ (Lv. 0)</div>
-            <div id="expCostText" class="text-yellow-400 font-semibold">₽ 150</div>
+          <button onclick="buyUpgrade('amuletCoin')" title="Each level: +5% PokéDollars per defeated Pokémon" class="bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/60 rounded-lg p-2 text-center">
+            <div id="amuletTitleText" class="font-bold text-amber-300">🪙 Amulet Coin (Lv. 0)</div>
+            <div id="amuletEffectText" class="text-[10px] text-amber-200/80">+0% ₽ per kill</div>
+            <div id="amuletCostText" class="text-yellow-400 font-semibold">₽ 0</div>
           </button>
         </div>
 
@@ -1319,8 +1320,9 @@
       tonicDpsMult: 1.06,        // elke Power Tonic-level: ×1.06 team-DPS (stapelt)
       tonicBaseCost: 100,
       tonicCostGrowth: 1.09,     // prijs ×1.09 per Tonic-level dat je vóór loopt op schema
-      expBaseCost: 150,
-      expCostGrowth: 1.08,
+      amuletPerLevel: 0.05,      // Amulet Coin: +5% geld per kill per level
+      amuletKills: 25,           // prijs van level 1 ≈ 25 kills op je nieuwste route…
+      amuletGrowth: 1.35,        // …×1.35 per level
       tonicPerArea: 0.50,        // hoeveel Tonic-levels de vijanden per gebied "verwachten"
       routeKillSec: 2.0,         // seconden per kill voor een speler die precies op schema ligt
       killsPerTonic: [2, 50],     // kills op je nieuwste route per Tonic-level, begin → eind (grind loopt op)
@@ -1330,7 +1332,10 @@
       xpKillsPerLevel: 5,        // kills op gelijk level om één level te stijgen
       majorGoldMult: 2.5,        // goud per kill in gyms/dungeons t.o.v. routes
       // Paldea (na Galar): eigen, zwaardere curve. Kanto t/m Galar blijven precies zoals ze waren.
-      paldea: { killsPerTonic: [50, 140], gymPower: [4.5, 6.0], dungeonPower: [1.8, 2.3] },
+      // Galar en Paldea hebben een eigen, zwaardere curve. Kanto t/m Alola blijven precies zoals ze waren.
+      // Galar: van het eind van Alola naar deze eindwaarden. Paldea: van het eind van Galar naar deze eindwaarden.
+      galar:  { killsPerTonic: 120, gymPower: 5.5, dungeonPower: 2.0 },
+      paldea: { killsPerTonic: 320, gymPower: 8.0, dungeonPower: 2.8 },
       // ---- Geld: nieuwere gebieden moeten altijd het meeste opleveren ----
       goldScale: 0.3,            // ₽ per kill = goldScale × (HP van de vijanden) ^ goldHpPower
       goldHpPower: 0.85,         // ≥ 0.8 nodig zodat de nieuwste route het meest per seconde oplevert
@@ -1351,10 +1356,13 @@
     function goldForHp(hp) { return Math.max(3, Math.round(BALANCE.goldScale * Math.pow(hp, BALANCE.goldHpPower))); }
     function lerp(range, t) { return range[0] + (range[1] - range[0]) * t; }
     // Moeilijkheidscurve per hoofdgebied: Kanto → Galar met de gewone waarden, daarna Paldea met BALANCE.paldea
-    let GALAR_END_IDX = 1, MAIN_COUNT = 2;
+    let ALOLA_END_IDX = 1, GALAR_END_IDX = 2, MAIN_COUNT = 3;
     function curve(key, mainIdx) {
-      if (mainIdx <= GALAR_END_IDX) return lerp(BALANCE[key], mainIdx / GALAR_END_IDX);
-      return lerp(BALANCE.paldea[key], (mainIdx - GALAR_END_IDX) / Math.max(1, MAIN_COUNT - 1 - GALAR_END_IDX));
+      // Kanto t/m Alola: de oorspronkelijke curve (alsof Galar het eind is)
+      if (mainIdx <= ALOLA_END_IDX) return lerp(BALANCE[key], mainIdx / GALAR_END_IDX);
+      const alolaEnd = lerp(BALANCE[key], ALOLA_END_IDX / GALAR_END_IDX);
+      if (mainIdx <= GALAR_END_IDX) return lerp([alolaEnd, BALANCE.galar[key]], (mainIdx - ALOLA_END_IDX) / (GALAR_END_IDX - ALOLA_END_IDX));
+      return lerp([BALANCE.galar[key], BALANCE.paldea[key]], (mainIdx - GALAR_END_IDX) / Math.max(1, MAIN_COUNT - 1 - GALAR_END_IDX));
     }
 
     // Verwachte basis-DPS van één teamlid (basisvormen vroeg, sterke finale vormen/legendaries laat)
@@ -1370,7 +1378,7 @@
       let badges = 0;
       const mainIdxOf = {};
       areas.forEach((a, i) => { mainIdxOf[a.id] = i; });
-      GALAR_END_IDX = mainIdxOf["galar_league"]; MAIN_COUNT = N;
+      ALOLA_END_IDX = mainIdxOf["alola_league"]; GALAR_END_IDX = mainIdxOf["galar_league"]; MAIN_COUNT = N;
       const optional = allAreas.filter(a => a.optional).map(a => ({ area: a, idx: Math.min(N - 1, mainIdxOf[a.unlockAfter] + 1) }));
       const jobs = [...areas.map((area, idx) => ({ area, idx })), ...optional];
       let badgeAt = [];
@@ -1639,7 +1647,7 @@
       catchRules: { C: "pokeball", R: "greatball", S: "ultraball", L: "ultraball", M: "ultraball" },
       shinyCharmTier: 0,
       powerTonicLvl: 0,
-      expShareLvl: 0,
+      amuletLvl: 0,
       autoCatch: false,
       badges: [],
       clearedAreas: {},
@@ -2002,7 +2010,7 @@
 
     function giveTeamXp(amount) {
       const cap = getCurrentCapInfo().cap;
-      const finalXp = Math.round(amount * (1 + (state.expShareLvl * 0.10)));
+      const finalXp = Math.round(amount);
       let changed = false;
 
       state.team.forEach(mon => {
@@ -2104,7 +2112,8 @@
     }
 
     function getTonicCost() { return tonicCostFor(state.powerTonicLvl); }
-    function getExpShareCost() { return Math.round(BALANCE.expBaseCost * Math.pow(BALANCE.expCostGrowth, state.expShareLvl)); }
+    function goldMult() { return 1 + (state.amuletLvl || 0) * BALANCE.amuletPerLevel; }
+    function getAmuletCost() { return nicePrice(BALANCE.amuletKills * newestRouteReward() * Math.pow(BALANCE.amuletGrowth, state.amuletLvl || 0)); }
     function getKillXp(enemy) { return Math.max(5, Math.round(getXpNeeded(enemy.level) / BALANCE.xpKillsPerLevel * (enemy.isBoss ? 3 : 1))); }
 
     function buyUpgrade(type) {
@@ -2114,12 +2123,12 @@
         state.pokedollars -= cost;
         state.powerTonicLvl++;
         addLog(`💪 Power Tonic upgraded to Lv. ${state.powerTonicLvl}! (×${tonicMultFor(state.powerTonicLvl).toLocaleString("en-US", { maximumFractionDigits: 1 })} Team DPS)`);
-      } else if (type === 'expShare') {
-        const cost = getExpShareCost();
+      } else if (type === 'amuletCoin') {
+        const cost = getAmuletCost();
         if (state.pokedollars < cost) { addLog("❌ Not enough PokéDollars!"); return; }
         state.pokedollars -= cost;
-        state.expShareLvl++;
-        addLog(`📘 Exp. Share+ upgraded to Lv. ${state.expShareLvl}! (+${state.expShareLvl * 10}% Team XP)`);
+        state.amuletLvl = (state.amuletLvl || 0) + 1;
+        addLog(`🪙 Amulet Coin upgraded to Lv. ${state.amuletLvl}! (+${Math.round((goldMult() - 1) * 100)}% PokéDollars per kill)`);
       }
       updateAllUI();
       saveGame();
@@ -2241,7 +2250,7 @@
     function handleEnemyDefeated() {
       if (getArea(state.currentAreaId).type === "route") respawnTicks = Math.round(BALANCE.respawnSec * 10);
       const area = getArea(state.currentAreaId);
-      const earnedGold = area.reward;
+      const earnedGold = Math.round(area.reward * goldMult());
       state.pokedollars += earnedGold;
       giveTeamXp(getKillXp(currentEnemy));
 
@@ -2393,7 +2402,7 @@
     function charmPrice(tier) { return CHARM_PRICES[tier]; }
     // Hoe lang sparen voor een vast bedrag, met grinden op je nieuwste route
     function saveTimeForPrice(price) {
-      const kills = Math.max(0, price - state.pokedollars) / newestRouteReward();
+      const kills = Math.max(0, price - state.pokedollars) / (newestRouteReward() * goldMult());
       if (kills <= 0) return "affordable now!";
       return saveTimeText(kills);
     }
@@ -3338,8 +3347,9 @@
       Object.keys(SHOP_KILLS).forEach(b => { const el = document.getElementById(`price-${b}`); if (el) el.textContent = `₽ ${shopPrice(b).toLocaleString("en-US")}`; });
       const mbt = document.getElementById("price-masterball"); if (mbt) mbt.title = saveTimeText(SHOP_KILLS.masterball);
       const mbh = document.getElementById("time-masterball"); if (mbh) mbh.textContent = saveTimeText(SHOP_KILLS.masterball);
-      document.getElementById("expTitleText").textContent = `📘 Exp. Share+ (Lv. ${state.expShareLvl})`;
-      document.getElementById("expCostText").textContent = `₽ ${getExpShareCost().toLocaleString("en-US")}`;
+      document.getElementById("amuletTitleText").textContent = `🪙 Amulet Coin (Lv. ${state.amuletLvl || 0})`;
+      document.getElementById("amuletEffectText").textContent = `+${Math.round((goldMult() - 1) * 100)}% ₽ per kill → next: +${Math.round((goldMult() - 1 + BALANCE.amuletPerLevel) * 100)}%`;
+      document.getElementById("amuletCostText").textContent = `₽ ${getAmuletCost().toLocaleString("en-US")}`;
 
       const fullGens = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(isGenComplete);
       document.getElementById("shinyOddsText").textContent = `Shiny Odds: 1 / ${baseShinyDenom().toLocaleString("en-US")}`
