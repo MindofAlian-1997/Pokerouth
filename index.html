@@ -2494,7 +2494,12 @@
       return (state.catchRules ||= { C: "pokeball", R: "greatball", S: "ultraball", L: "ultraball", M: "ultraball" });
     }
     // De gekozen bal, of de eerstvolgende goedkopere die je nog hebt (nooit een duurdere)
-    function ballFor(id) {
+    function ballFor(id, isShiny = false) {
+      // Shiny? Altijd de beste bal die je hebt (Master → Ultra → Great → Poké), ongeacht je regels
+      if (isShiny) {
+        for (let i = BALL_ORDER.length - 1; i >= 0; i--) if (state.balls[BALL_ORDER[i]] > 0) return BALL_ORDER[i];
+        return null;
+      }
       const want = catchRules()[rarityOf(id).key] || "pokeball";
       if (want === "none") return null;
       for (let i = BALL_ORDER.indexOf(want); i >= 0; i--) if (state.balls[BALL_ORDER[i]] > 0) return BALL_ORDER[i];
@@ -2520,9 +2525,10 @@
       const db = POKEMON_DB[currentEnemy.id];
       if (!db || !isWorthCatching(currentEnemy.id, currentEnemy.isShiny)) return;
       const rare = ["S", "L", "M"].includes(rarityOf(currentEnemy.id).key) || currentEnemy.isShiny;
-      const ball = ballFor(currentEnemy.id);
+      const ball = ballFor(currentEnemy.id, currentEnemy.isShiny);
       if (!ball) {
-        if (catchRules()[rarityOf(currentEnemy.id).key] !== "none" && Date.now() - lastOutOfBallsLog > 20000) {
+        if (currentEnemy.isShiny) addLog(`❌ A Shiny ${db.name} appeared but you have no Poké Balls left!`);
+        else if (catchRules()[rarityOf(currentEnemy.id).key] !== "none" && Date.now() - lastOutOfBallsLog > 20000) {
           lastOutOfBallsLog = Date.now();
           addLog(`❌ Out of balls for ${rarityOf(currentEnemy.id).name} Pokémon! Buy more in the PokéMart.`);
         }
