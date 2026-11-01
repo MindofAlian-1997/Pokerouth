@@ -200,7 +200,7 @@
       <div class="flex flex-wrap items-center gap-2 mb-3">
         <label class="text-xs text-slate-300">Your name:</label>
         <input id="leaderNameInput" maxlength="16" placeholder="Trainer name" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500 w-36" />
-        <button onclick="saveLeaderName()" class="bg-violet-700 hover:bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-lg">Save & submit</button>
+        <button onclick="saveLeaderName()" class="bg-violet-700 hover:bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-lg">Save name</button>
         <span id="leaderStatus" class="text-[11px] text-slate-400"></span>
       </div>
       <div class="flex gap-1.5 mb-2">
@@ -1764,6 +1764,8 @@
       grantMissedLeagueRewards();
       migrateRouteClears();
       migrateMoneyScale();
+      if (!state.leaderName && storageGet("pri_leaderName")) state.leaderName = storageGet("pri_leaderName");
+      if (!state.playerId && storageGet("pri_playerId")) state.playerId = storageGet("pri_playerId");
       updateSoundBtn();
       const apt = document.getElementById("autoProgressToggle"); if (apt) apt.checked = !!state.autoProgress;
       if (!AREAS.some(a => a.id === state.currentAreaId)) {
@@ -1804,38 +1806,50 @@
     // Voor een gedeelde lijst moet iedereen dezelfde database gebruiken: zet je Firebase-URL in DEFAULT_FIREBASE_URL.
     let leaderTab = "dex", leaderData = null, lastLeaderSubmit = 0, lastLeaderKey = "";
     function leaderDbUrl() { return (DEFAULT_FIREBASE_URL || state.firebaseUrl || "").trim().replace(/\/+$/, ""); }
+    // Naam en speler-ID worden ook buiten je save onthouden, zodat ze een reset overleven
     function myPlayerId() {
-      if (!state.playerId) state.playerId = "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      if (!state.playerId) state.playerId = storageGet("pri_playerId") || ("p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+      storageSet("pri_playerId", state.playerId);
       return state.playerId;
     }
+    function myLeaderName() { return cleanName(state.leaderName || storageGet("pri_leaderName") || state.cloudUser); }
     function myScores() {
       let dex = 0, shinies = 0;
       state.pokedex.forEach(k => { if (k.endsWith("_normal") && k.startsWith("sp_")) dex++; else if (k.endsWith("_shiny") && k.startsWith("sp_")) shinies++; });
       return { dex, shinies, badges: state.badges.length };
     }
+    // Momentopname van hoe ver je bent
+    function progressSnapshot() {
+      const main = AREAS.filter(a => !a.optional);
+      const front = main.find(a => !areaDone(a)) || main[main.length - 1];
+      return { region: front.region, area: front.name, tonic: state.powerTonicLvl || 0 };
+    }
     function cleanName(n) { return (n || "").replace(/[<>"'&]/g, "").trim().slice(0, 16); }
-    async function submitLeaderboard(force = false) {
+    async function submitLeaderboard(force = false, keepalive = false) {
       const url = leaderDbUrl();
-      const name = cleanName(state.leaderName || state.cloudUser);
+      const name = myLeaderName();
       if (!url.startsWith("https://") || !name || !state.starterChosen) return false;
-      const sc = myScores();
-      const key = `${name}|${sc.dex}|${sc.shinies}|${sc.badges}`;
-      if (!force && (key === lastLeaderKey || Date.now() - lastLeaderSubmit < 60000)) return false;
+      const sc = myScores(), snap = progressSnapshot();
+      const key = `${name}|${sc.dex}|${sc.shinies}|${sc.badges}|${snap.area}|${snap.tonic}`;
+      if (!force && key === lastLeaderKey) return false;
       try {
         const res = await fetch(`${url}/leaderboard/${myPlayerId()}.json`, {
-          method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, dex: sc.dex, shinies: sc.shinies, badges: sc.badges, updated: Date.now() })
+          method: "PUT", headers: { "Content-Type": "application/json" }, keepalive,
+          body: JSON.stringify({ name, dex: sc.dex, shinies: sc.shinies, badges: sc.badges, region: snap.region, area: snap.area, tonic: snap.tonic, updated: Date.now() })
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
         lastLeaderSubmit = Date.now(); lastLeaderKey = key;
         return true;
       } catch (e) { return false; }
     }
-    // automatisch elke minuut je score bijwerken (alleen als er iets veranderd is)
-    setInterval(() => { submitLeaderboard(false); }, 60000);
+    // Automatisch bijwerken: elk half uur (alleen als er iets veranderd is), en bij het afsluiten van de pagina
+    const LEADER_INTERVAL_MS = 30 * 60 * 1000;
+    function scheduleLeaderSubmit() { /* niet meer per gebeurtenis: zie het halfuur-interval hieronder */ }
+    setInterval(() => { submitLeaderboard(false); }, LEADER_INTERVAL_MS);
+    window.addEventListener("pagehide", () => { submitLeaderboard(false, true); });
 
     function openLeaderboard() {
-      document.getElementById("leaderNameInput").value = cleanName(state.leaderName || state.cloudUser);
+      document.getElementById("leaderNameInput").value = myLeaderName();
       document.getElementById("leaderModal").classList.remove("hidden");
       setLeaderTab(leaderTab);
       refreshLeaderboard();
@@ -1851,7 +1865,7 @@
     async function saveLeaderName() {
       const name = cleanName(document.getElementById("leaderNameInput").value);
       if (!name) { document.getElementById("leaderStatus").textContent = "Enter a name first."; return; }
-      state.leaderName = name; saveGame();
+      state.leaderName = name; storageSet("pri_leaderName", name); saveGame();
       await refreshLeaderboard(true);
     }
     async function refreshLeaderboard(forceSubmit = true) {
@@ -1871,9 +1885,10 @@
         const res = await fetch(`${url}/leaderboard.json`);
         if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json() || {};
-        leaderData = Object.entries(data).map(([id, v]) => ({ id, name: cleanName(v && v.name) || "???", dex: +(v && v.dex) || 0, shinies: +(v && v.shinies) || 0, badges: +(v && v.badges) || 0, updated: +(v && v.updated) || 0 }))
+        leaderData = Object.entries(data).map(([id, v]) => ({ id, name: cleanName(v && v.name) || "???", dex: +(v && v.dex) || 0, shinies: +(v && v.shinies) || 0, badges: +(v && v.badges) || 0, updated: +(v && v.updated) || 0,
+            region: typeof (v && v.region) === "string" ? cleanName(v.region) : "", area: typeof (v && v.area) === "string" ? cleanName(v.area.slice(0, 30)) : "", tonic: +(v && v.tonic) || 0 }))
           .filter(r => r.dex <= TOTAL_SPECIES && r.shinies <= TOTAL_SPECIES);
-        status.textContent = cleanName(state.leaderName || state.cloudUser) ? `${leaderData.length} trainers` : "Enter your name to join the list!";
+        status.textContent = myLeaderName() ? `${leaderData.length} trainers • your score updates every 30 min` : "Enter your name once to join the list!";
       } catch (e) {
         leaderData = null;
         status.textContent = "⚠️ Could not reach the database.";
@@ -1890,7 +1905,10 @@
       box.innerHTML = rows.map((r, i) => {
         const me = r.id === state.playerId;
         const main = leaderTab === "dex" ? `${r.dex} / ${TOTAL_SPECIES}` : `✨ ${r.shinies}`;
-        const sub = leaderTab === "dex" ? `✨ ${r.shinies} shinies • 🏅 ${r.badges}` : `📖 ${r.dex} caught • 🏅 ${r.badges}`;
+        const ago = (() => { const m = Math.round((Date.now() - r.updated) / 60000); return !r.updated ? "" : m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; })();
+        const where = r.region ? `📍 ${capitalize(r.region)}` : "";
+        const sub = (leaderTab === "dex" ? `✨ ${r.shinies} shinies • 🏅 ${r.badges}` : `📖 ${r.dex} caught • 🏅 ${r.badges}`)
+          + (where ? ` • ${where}` : "") + (r.tonic ? ` • 💪 ${r.tonic}` : "") + (ago ? ` • <span class="text-slate-500">${ago}</span>` : "");
         const pctBar = leaderTab === "dex" ? Math.round(r.dex / TOTAL_SPECIES * 100) : 0;
         return `<div class="flex items-center gap-3 rounded-lg px-3 py-2 border ${me ? "border-violet-400 bg-violet-950/50" : "border-slate-800 bg-slate-950"}">
             <span class="w-8 text-center text-sm font-bold ${i < 3 ? "" : "text-slate-500"}">${medal(i)}</span>
@@ -2115,6 +2133,7 @@
       const gen = genOf(id);
       const wasComplete = isGenComplete(gen);
       state.pokedex.push(k);
+      if (typeof scheduleLeaderSubmit === "function") scheduleLeaderSubmit();
       if (!isShiny && !wasComplete && isGenComplete(gen)) {
         addLog(`📖 Gen ${gen} Pokédex complete! Shiny odds for Gen ${gen} Pokémon are now halved.`);
         if (typeof celebrate === "function") celebrate("dexgen", { gen });
@@ -2529,6 +2548,7 @@
           state.clearedAreas[area.id] = true;
           if (area.badgeId && !state.badges.includes(area.badgeId)) {
             state.badges.push(area.badgeId);
+            scheduleLeaderSubmit();
             const newCap = getCurrentCapInfo();
             addLog(`🏅 ${area.badgeName} earned! Level Cap is now Lv. ${newCap.cap}!`);
             const btype = area.badgeId.endsWith("_champ") ? "trophy" : (BADGE_TYPE[area.badgeId] || "normal");
