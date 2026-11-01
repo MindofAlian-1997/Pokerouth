@@ -1344,10 +1344,9 @@
     const BALANCE = {
       tonicDpsMult: 1.06,        // elke Power Tonic-level: ×1.06 team-DPS (stapelt)
       tonicBaseCost: 100,
-      tonicCostGrowth: 1.09,     // prijs ×1.09 per Tonic-level dat je vóór loopt op schema
+      tonicCostGrowth: 1.09,     // prijs ×1.09 per level voorbij het eind van de vaste prijslijst
       amuletPerLevel: 0.05,      // Amulet Coin: +5% geld per kill per level
-      amuletKills: 25,           // prijs van level 1 ≈ 25 kills op je nieuwste route…
-      amuletGrowth: 1.35,        // …×1.35 per level
+      amuletGrowth: 1.6,         // Amulet Coin: ×1.6 per level voorbij het eind van de vaste prijslijst
       tonicPerArea: 0.50,        // hoeveel Tonic-levels de vijanden per gebied "verwachten"
       routeKillSec: 2.0,         // seconden per kill voor een speler die precies op schema ligt
       killsPerTonic: [2, 50],     // kills op je nieuwste route per Tonic-level, begin → eind (grind loopt op)
@@ -1362,24 +1361,33 @@
       galar:  { killsPerTonic: 120, gymPower: 5.5, dungeonPower: 2.0 },
       paldea: { killsPerTonic: 320, gymPower: 8.0, dungeonPower: 2.8 },
       // ---- Geld: nieuwere gebieden moeten altijd het meeste opleveren ----
-      goldScale: 0.3,            // ₽ per kill = goldScale × (HP van de vijanden) ^ goldHpPower
-      goldHpPower: 0.85,         // ≥ 0.8 nodig zodat de nieuwste route het meest per seconde oplevert
+      // ---- Geld: rustig oplopend (₽15 → ±₽3.000 per kill), en je nieuwste route levert altijd het meest op ----
+      goldScale: 3.83,           // ₽ per kill op je nieuwste route = goldScale × (HP daar) ^ goldHpPower
+      goldHpPower: 0.296,
+      oldAreaDecay: 0.85,        // oudere gebieden: × (hun HP / HP van je nieuwste route) ^ oldAreaDecay
       respawnSec: 0.5,           // pauze tot de volgende wilde Pokémon op een route verschijnt
       routeKills: [10, 50]       // kills om een route te halen: Kanto Route 1 → eind Paldea (loopt geleidelijk op)
     };
 
     function levelMult(level) { return 1 + (level - 1) * 0.22; }
     function tonicMultFor(lvl) { return Math.pow(BALANCE.tonicDpsMult, lvl); }
-    // Power Tonic-prijs: ongeveer killsPerTonic kills op je nieuwste route (zie newestRouteReward),
-    // ×1.09 voor elk level dat je vóór loopt op schema (en goedkoper als je achterloopt).
+    // Power Tonic: VASTE prijs per level. De lijst is gemeten uit volledige speelrondes, zodat elke
+    // generatie even zwaar blijft: per level ongeveer "killsPerTonic" kills op de route waar je dan bent.
+    // Voorbij het eind van de lijst: ×1.09 per level.
+    const TONIC_PRICES = [90,91,92,93,120,130,210,240,240,250,250,250,250,260,260,260,290,740,1500,1600,1700,1700,1700,1800,2500,2600,2600,2600,2600,4400,4900,5400,5700,5900,6300,7100,7600,8100,8100,8700,9400,9700,9800,10000,11000,11000,12000,13000,13000,13000,13000,13000,14000,15000,15000,16000,17000,17000,19000,19000,21000,21000,21000,22000,23000,24000,24000,26000,27000,28000,29000,30000,30000,31000,32000,34000,35000,36000,36000,37000,42000,42000,43000,43000,45000,47000,47000,49000,50000,50000,51000,54000,57000,60000,66000,67000,70000,74000,75000,79000,83000,84000,89000,91000,99000,100000,100000,110000,110000,120000,120000,120000,130000,140000,150000,150000,160000,160000,170000,180000,180000,200000,200000,210000,220000,230000,240000,240000,250000,260000,260000,280000,290000,300000,340000,340000,350000,360000,360000,390000,400000,410000,440000,450000,470000,610000,650000,750000,830000,970000,1100000,1100000,1300000,1500000,1600000,1800000,2100000,2100000,2500000,2500000,3200000,3400000,3900000,3900000,4100000,4800000,5200000,5700000,6100000,7100000,7300000,8100000,8400000,9500000,10000000,11000000,11000000,12000000,14000000];
     function tonicCostFor(lvl) {
-      if (typeof newestRouteReward !== "function" || !AREAS[0].reward) return Math.round(BALANCE.tonicBaseCost * Math.pow(BALANCE.tonicCostGrowth, lvl));
-      const { mainIdx, t } = frontierProgress();
-      const expected = mainIdx * BALANCE.tonicPerArea;
-      const kills = curve("killsPerTonic", mainIdx);
-      return Math.max(10, Math.round(kills * newestRouteReward() * Math.pow(BALANCE.tonicCostGrowth, lvl - expected)));
+      const last = TONIC_PRICES.length - 1;
+      if (lvl <= last) return TONIC_PRICES[Math.max(0, lvl)];
+      return Math.round(TONIC_PRICES[last] * Math.pow(BALANCE.tonicCostGrowth, lvl - last));
     }
-    function goldForHp(hp) { return Math.max(3, Math.round(BALANCE.goldScale * Math.pow(hp, BALANCE.goldHpPower))); }
+    function goldForHp(hp) { return Math.max(1, Math.round(BALANCE.goldScale * Math.pow(hp, BALANCE.goldHpPower))); }
+    // Geld per kill in een gebied: hoe zwakker de Pokémon daar t.o.v. je nieuwste route, hoe minder het oplevert
+    function goldFor(area) {
+      const hpF = newestRouteHp();
+      const base = BALANCE.goldScale * Math.pow(hpF, BALANCE.goldHpPower);
+      const rel = Math.min(1, (area.goldHp || hpF) / hpF);
+      return Math.max(1, Math.round(base * Math.pow(rel, BALANCE.oldAreaDecay) * (area.goldMult || 1)));
+    }
     function lerp(range, t) { return range[0] + (range[1] - range[0]) * t; }
     // Moeilijkheidscurve per hoofdgebied: Kanto → Galar met de gewone waarden, daarna Paldea met BALANCE.paldea
     let ALOLA_END_IDX = 1, GALAR_END_IDX = 2, MAIN_COUNT = 3;
@@ -1431,6 +1439,7 @@
         if (area.type === "route") {
           area.killsNeeded = Math.round(lerp(BALANCE.routeKills, idx / Math.max(1, N - 1)));
           area.baseHp = Math.round(refDps * BALANCE.routeKillSec);
+          area.goldHp = area.baseHp;
           area.reward = goldForHp(area.baseHp);
           area.reqDps = Math.round(refDps);
         } else {
@@ -1439,6 +1448,7 @@
           const weights = getWaveWeights(area);
           const totalWeight = weights.reduce((s, w) => s + w, 0);
           area.baseHp = Math.round(reqDps * area.timer * BALANCE.timerSlack / totalWeight);
+          area.goldHp = routeHpHere; area.goldMult = BALANCE.majorGoldMult;
           area.reward = Math.round(goldPerKill * BALANCE.majorGoldMult);
           area.reqDps = Math.round(reqDps);
         }
@@ -1682,6 +1692,7 @@
       clearedAreas: {},
       routeKills: {},
       routeReqVersion: 1, // oude saves hebben dit veld niet → bij het laden worden hun routes omgezet (daarna 2)
+      moneyVersion: 1,    // idem voor geld: oude saves rekenen hun ₽ om naar de nieuwe (kleinere) schaal
       visitedAreas: {},
       seen: {},
       soundOn: true,
@@ -1724,6 +1735,7 @@
       migratePokedex();
       grantMissedLeagueRewards();
       migrateRouteClears();
+      migrateMoneyScale();
       updateSoundBtn();
       if (!AREAS.some(a => a.id === state.currentAreaId)) {
         let last = 0;
@@ -2048,6 +2060,7 @@
         state = { ...state, ...decoded };
         migratePokedex();
         migrateRouteClears();
+        migrateMoneyScale();
         saveGame();
         if (state.starterChosen) document.getElementById("starterModal").classList.add("hidden");
         enterArea(state.currentAreaId);
@@ -2250,7 +2263,12 @@
 
     function getTonicCost() { return tonicCostFor(state.powerTonicLvl); }
     function goldMult() { return 1 + (state.amuletLvl || 0) * BALANCE.amuletPerLevel; }
-    function getAmuletCost() { return nicePrice(BALANCE.amuletKills * newestRouteReward() * Math.pow(BALANCE.amuletGrowth, state.amuletLvl || 0)); }
+    // Amulet Coin: VASTE prijs per level, gemeten uit volledige speelrondes (lvl 1 ≈ Johto, lvl 5 ≈ Sinnoh, lvl 10 ≈ Kalos, lvl 15 ≈ Paldea)
+    const AMULET_PRICES = [6600, 9800, 15000, 26000, 68000, 110000, 260000, 360000, 530000, 740000, 1100000, 1700000, 2300000, 3400000, 4600000];
+    function getAmuletCost() {
+      const lvl = state.amuletLvl || 0, last = AMULET_PRICES.length - 1;
+      return lvl <= last ? AMULET_PRICES[lvl] : nicePrice(AMULET_PRICES[last] * Math.pow(BALANCE.amuletGrowth, lvl - last));
+    }
     function getKillXp(enemy) { return Math.max(5, Math.round(getXpNeeded(enemy.level) / BALANCE.xpKillsPerLevel * (enemy.isBoss ? 3 : 1))); }
 
     function buyUpgrade(type) {
@@ -2293,6 +2311,17 @@
     function killsNeeded(area) { return area.killsNeeded || 10; }
     function routeDone(area) { return !!state.clearedAreas[area.id] || (state.routeKills[area.id] || 0) >= killsNeeded(area); }
     // Oude saves: routes die al met 10 kills gehaald waren, blijven gehaald
+    // Oude saves: ₽ omrekenen van de oude schaal (miljarden) naar de nieuwe (miljoenen), op basis van je voortgang
+    function migrateMoneyScale() {
+      if (state.moneyVersion >= 2) return;
+      if (!state.starterChosen) { state.moneyVersion = 2; return; } // nieuw spel: niets om te rekenen
+      const hp = newestRouteHp();
+      const oldGold = Math.max(3, 0.3 * Math.pow(hp, 0.85)), newGold = BALANCE.goldScale * Math.pow(hp, BALANCE.goldHpPower);
+      const before = state.pokedollars;
+      state.pokedollars = Math.round(before * Math.min(1, newGold / oldGold));
+      if (before > 1000 && state.pokedollars !== before) addLog(`💱 PokéDollars converted to the new money scale: ₽${before.toLocaleString("en-US")} → ₽${state.pokedollars.toLocaleString("en-US")}`);
+      state.moneyVersion = 2;
+    }
     function migrateRouteClears() {
       if (state.routeReqVersion >= 2) return;
       for (const id in state.routeKills) if (state.routeKills[id] >= 10) state.clearedAreas[id] = true;
@@ -2397,7 +2426,7 @@
     function handleEnemyDefeated() {
       if (getArea(state.currentAreaId).type === "route") respawnTicks = Math.round(BALANCE.respawnSec * 10);
       const area = getArea(state.currentAreaId);
-      const earnedGold = Math.round(area.reward * goldMult());
+      const earnedGold = Math.round(goldFor(area) * goldMult());
       state.pokedollars += earnedGold;
       giveTeamXp(getKillXp(currentEnemy));
 
@@ -2523,16 +2552,32 @@
     }
 
     // ---- Winkelprijzen in "kills op je nieuwste route", zodat ze in elke fase even zwaar voelen ----
-    const SHOP_KILLS = { pokeball: 2, greatball: 6, ultraball: 15, masterball: 10000 };  // Master Ball: ~7 uur sparen
+    // Vaste winkelprijzen
+    const SHOP_PRICES = { pokeball: 50, greatball: 250, ultraball: 1000, masterball: 5000000 };
     // Shiny Charm: vaste prijzen, als doelen voor verschillende fases (I ≈ Sinnoh/Unova, II ≈ Kalos/Alola, III ≈ eind Galar)
-    const CHARM_PRICES = [250000000, 5000000000, 100000000000];
+    const CHARM_PRICES = [400000, 1500000, 10000000];
     // Hoe lang sparen voor een prijs, bij grinden op je nieuwste route (±2 s per kill + respawn)
     function saveTimeText(kills) {
       const h = kills * (BALANCE.routeKillSec + BALANCE.respawnSec) / 3600;
       if (h >= 100) return "a very long grind for now";
       return h >= 1 ? `~${Math.round(h)}h of grinding` : `~${Math.max(1, Math.round(h * 60))} min of grinding`;
     }
-    function newestRouteReward() {
+    // HP van je nieuwste open route (bepaalt hoeveel geld alles oplevert)
+    let newestHpCache = { key: "", value: 0 };
+    function newestRouteHp() {
+      const floor = getProgressFloor();
+      const key = floor + "|" + progressFloorCache.key;
+      if (newestHpCache.key === key) return newestHpCache.value;
+      let best = AREAS[0].baseHp;
+      for (let i = 0; i <= Math.min(AREAS.length - 1, floor + 1); i++) {
+        const a = AREAS[i];
+        if (a.type === "route" && !a.optional && isAreaUnlocked(i)) best = Math.max(best, a.baseHp);
+      }
+      newestHpCache = { key, value: best };
+      return best;
+    }
+    function newestRouteReward() { return goldForHp(newestRouteHp()); }
+    function newestRouteRewardOld() {
       const floor = getProgressFloor();
       let best = AREAS[0].reward;
       for (let i = 0; i <= Math.min(AREAS.length - 1, floor + 1); i++) {
@@ -2552,7 +2597,7 @@
       return { mainIdx, t: mainIdx / (main.length - 1) };
     }
     function nicePrice(x) { const p = Math.pow(10, Math.max(0, Math.floor(Math.log10(x)) - 1)); return Math.round(x / p) * p; }
-    function shopPrice(type) { return nicePrice(SHOP_KILLS[type] * newestRouteReward()); }
+    function shopPrice(type) { return SHOP_PRICES[type]; }
     function charmPrice(tier) { return CHARM_PRICES[tier]; }
     // Hoe lang sparen voor een vast bedrag, met grinden op je nieuwste route
     function saveTimeForPrice(price) {
@@ -3525,9 +3570,8 @@
 
       document.getElementById("tonicTitleText").textContent = `💪 Power Tonic (Lv. ${state.powerTonicLvl})`;
       document.getElementById("tonicCostText").textContent = `₽ ${getTonicCost().toLocaleString("en-US")}`;
-      Object.keys(SHOP_KILLS).forEach(b => { const el = document.getElementById(`price-${b}`); if (el) el.textContent = `₽ ${shopPrice(b).toLocaleString("en-US")}`; });
-      const mbt = document.getElementById("price-masterball"); if (mbt) mbt.title = saveTimeText(SHOP_KILLS.masterball);
-      const mbh = document.getElementById("time-masterball"); if (mbh) mbh.textContent = saveTimeText(SHOP_KILLS.masterball);
+      Object.keys(SHOP_PRICES).forEach(b => { const el = document.getElementById(`price-${b}`); if (el) el.textContent = `₽ ${shopPrice(b).toLocaleString("en-US")}`; });
+      const mbh = document.getElementById("time-masterball"); if (mbh) mbh.textContent = saveTimeForPrice(shopPrice("masterball"));
       document.getElementById("amuletTitleText").textContent = `🪙 Amulet Coin (Lv. ${state.amuletLvl || 0})`;
       document.getElementById("amuletEffectText").textContent = `+${Math.round((goldMult() - 1) * 100)}% ₽ per kill → next: +${Math.round((goldMult() - 1 + BALANCE.amuletPerLevel) * 100)}%`;
       document.getElementById("amuletCostText").textContent = `₽ ${getAmuletCost().toLocaleString("en-US")}`;
