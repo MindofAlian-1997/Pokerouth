@@ -281,6 +281,10 @@
         <button onclick="togglePcFilter('favOnly')" id="pcFilter-favOnly" class="px-2.5 py-1 rounded text-xs font-bold">★ Favorites only</button>
         <input type="text" id="pcSearchInput" oninput="renderPc()" placeholder="Search name..." class="ml-auto bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 w-36" />
       </div>
+      <div class="flex flex-wrap items-center gap-1.5 mb-3">
+        <span class="text-[11px] font-bold text-slate-400 mr-1">Rarity:</span>
+        <div id="pcRarityChips" class="flex flex-wrap gap-1.5"></div>
+      </div>
       <div id="pcGrid" class="flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-2 pr-1 content-start"></div>
     </div>
   </div>
@@ -3352,7 +3356,30 @@
     function spriteUrl(mon) {
       return spriteSrc(mon.id, mon.isShiny);
     }
-    function pcPrefs() { return (state.pcPrefs ||= { sort: "dps", dir: -1, shinyOnly: false, favOnly: false }); }
+    function pcPrefs() {
+      const p = (state.pcPrefs ||= { sort: "dps", dir: -1, shinyOnly: false, favOnly: false });
+      p.rarities ||= []; // leeg = alle zeldzaamheden
+      return p;
+    }
+    // Zeldzaamheidsfilter in de PC: meerdere tegelijk aan te zetten, "All" zet alles weer aan
+    function togglePcRarity(key) {
+      const r = pcPrefs().rarities;
+      if (key === "all") r.length = 0;
+      else if (r.includes(key)) r.splice(r.indexOf(key), 1);
+      else r.push(key);
+      renderPc(); saveGame();
+    }
+    function renderPcRarityChips() {
+      const box = document.getElementById("pcRarityChips");
+      if (!box) return;
+      const sel = pcPrefs().rarities;
+      const counts = {};
+      state.pc.forEach(m => { const k = rarityOf(m.id).key; counts[k] = (counts[k] || 0) + 1; });
+      const chip = (key, label, style, n, active) => `<button onclick="togglePcRarity('${key}')"
+          class="px-2 py-1 rounded border text-[11px] font-bold transition ${active ? style + " ring-2 ring-white/70" : "border-slate-700 bg-slate-900 text-slate-500 hover:text-slate-300"}">${label} <span class="opacity-70">${n}</span></button>`;
+      box.innerHTML = chip("all", "All", "border-slate-400 bg-slate-700 text-white", state.pc.length, sel.length === 0)
+        + ["C", "R", "S", "L", "M"].map(k => chip(k, RARITY[k].icon + RARITY[k].name, RARITY[k].style, counts[k] || 0, sel.includes(k))).join("");
+    }
     function isPcOpen() { return !document.getElementById("pcModal").classList.contains("hidden"); }
     function findMon(uid) {
       return state.team.find(m => m.uid === uid) || state.pc.find(m => m.uid === uid);
@@ -3473,6 +3500,7 @@
       return state.pc
         .filter(m => !prefs.shinyOnly || m.isShiny)
         .filter(m => !prefs.favOnly || m.favorite)
+        .filter(m => !prefs.rarities.length || prefs.rarities.includes(rarityOf(m.id).key))
         .filter(m => !q || POKEMON_DB[m.id].name.toLowerCase().includes(q))
         .sort((a, b) => ((key(a) - key(b)) * prefs.dir) || (a.id - b.id));
     }
@@ -3486,6 +3514,7 @@
 
     function renderPc() {
       if (!isPcOpen()) return;
+      renderPcRarityChips();
       pcNeedsRefresh = false;
       const prefs = pcPrefs();
 
