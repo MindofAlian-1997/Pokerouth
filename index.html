@@ -1362,10 +1362,10 @@
       paldea: { killsPerTonic: 320, gymPower: 8.0, dungeonPower: 2.8 },
       // ---- Geld: nieuwere gebieden moeten altijd het meeste opleveren ----
       // ---- Geld: rustig oplopend (₽15 → ±₽3.000 per kill), en je nieuwste route levert altijd het meest op ----
-      goldScale: 3.83,           // ₽ per kill op je nieuwste route = goldScale × (HP daar) ^ goldHpPower
+      goldScale: 2.7,            // ₽ per kill op je nieuwste route = goldScale × (HP daar) ^ goldHpPower
       goldHpPower: 0.296,
-      oldAreaDecay: 0.85,        // oudere gebieden: × (hun HP / HP van je nieuwste route) ^ oldAreaDecay
-      respawnSec: 0.5,           // pauze tot de volgende wilde Pokémon op een route verschijnt
+      oldAreaDecay: 1.0,         // oudere gebieden: × (hun HP / HP van je nieuwste route) ^ oldAreaDecay (≥ 2/(2+respawnSec) houdt je nieuwste route het best)
+      respawnSec: 0.2,           // korte pauze tot de volgende wilde Pokémon op een route verschijnt
       routeKills: [10, 50]       // kills om een route te halen: Kanto Route 1 → eind Paldea (loopt geleidelijk op)
     };
 
