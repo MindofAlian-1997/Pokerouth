@@ -365,7 +365,7 @@
           <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400">🏅 <span id="badgeRegionTitle">Kanto</span> Badges</h3>
           <span id="badgeRegionCount" class="text-[11px] font-semibold text-yellow-300"></span>
         </div>
-        <div id="badgeContainer" class="grid grid-cols-5 gap-x-1 gap-y-2 pr-1"></div>
+        <div id="badgeContainer" class="pr-1"></div>
       </div>
     </section>
 
@@ -452,7 +452,7 @@
             <span class="text-xs font-bold text-slate-300">🎯 Auto-Catch: which ball for which rarity?</span>
             <span class="text-[10px] text-slate-500">Out of a ball? The next cheaper one is used.</span>
           </div>
-          <div id="catchRules" class="grid grid-cols-1 sm:grid-cols-5 gap-1.5 mb-2"></div>
+          <div id="catchRules" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 mb-2"></div>
           <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-slate-400 border-t border-slate-800 pt-2">
             <span>🔴 Poké Ball <strong id="count-pokeball" class="text-white">10</strong></span>
             <span>🔵 Great Ball <strong id="count-greatball" class="text-white">2</strong></span>
@@ -484,7 +484,6 @@
           <button onclick="buyBall('masterball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
             <div class="font-bold text-purple-400">+1 Master Ball</div>
             <div id="price-masterball" class="text-yellow-400 font-semibold">₽ 75,000</div>
-            <div id="time-masterball" class="text-[10px] text-slate-400"></div>
           </button>
           <button id="buyShinyCharmBtn" onclick="buyShinyCharm()" class="bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/60 rounded-lg p-2 text-center col-span-2">
             <div id="shinyCharmTitle" class="font-bold text-amber-300">✨ Shiny Charm I</div>
@@ -1016,9 +1015,11 @@
     function rarityOf(id) { return MYTHICAL_IDS.has(id) ? RARITY.M : (RARITY[RARITY_DATA[id - 1]] || RARITY.C); }
     // Vangkans = basiskans van de zeldzaamheid × bal (Master Ball altijd 100%)
     const BALL_MULT = { pokeball: 1, greatball: 2.5, ultraball: 4 };
-    function catchChance(id, ball) {
+    // Shinies zijn 2× zo makkelijk te vangen
+    const SHINY_CATCH_MULT = 2;
+    function catchChance(id, ball, isShiny = false) {
       if (ball === "masterball") return 1;
-      return Math.min(1, rarityOf(id).catchBase * (BALL_MULT[ball] || 1));
+      return Math.min(1, rarityOf(id).catchBase * (BALL_MULT[ball] || 1) * (isShiny ? SHINY_CATCH_MULT : 1));
     }
     function pct(x) { const v = x * 100; return v >= 10 || Number.isInteger(v) ? `${Math.round(v)}%` : `${v.toFixed(1)}%`; }
 
@@ -2564,13 +2565,18 @@
     const BALL_ORDER = ["pokeball", "greatball", "ultraball", "masterball"];
     const BALL_NAMES = { pokeball: "Poké Ball", greatball: "Great Ball", ultraball: "Ultra Ball", masterball: "Master Ball", none: "Don't catch" };
     function catchRules() {
-      return (state.catchRules ||= { C: "pokeball", R: "greatball", S: "ultraball", L: "ultraball", M: "ultraball" });
+      const r = (state.catchRules ||= { C: "pokeball", R: "greatball", S: "ultraball", L: "ultraball", M: "ultraball" });
+      r.shiny ||= "best"; // shinies: standaard je beste bal
+      return r;
     }
     // De gekozen bal, of de eerstvolgende goedkopere die je nog hebt (nooit een duurdere)
     function ballFor(id, isShiny = false) {
-      // Shiny? Altijd de beste bal die je hebt (Master → Ultra → Great → Poké), ongeacht je regels
+      // Shiny? Eigen regel: "best" = je beste bal (Master → Ultra → Great → Poké), of een gekozen bal
       if (isShiny) {
-        for (let i = BALL_ORDER.length - 1; i >= 0; i--) if (state.balls[BALL_ORDER[i]] > 0) return BALL_ORDER[i];
+        const want = catchRules().shiny;
+        if (want === "none") return null;
+        const top = want === "best" ? BALL_ORDER.length - 1 : BALL_ORDER.indexOf(want);
+        for (let i = top; i >= 0; i--) if (state.balls[BALL_ORDER[i]] > 0) return BALL_ORDER[i];
         return null;
       }
       const want = catchRules()[rarityOf(id).key] || "pokeball";
@@ -2589,7 +2595,13 @@
             <span class="text-[11px] font-bold">${r.icon}${r.name}</span>
             <select onchange="setCatchRule('${k}', this.value)" class="bg-slate-950 border border-slate-700 rounded text-[11px] text-white px-1 py-0.5 focus:outline-none">${opts}</select>
           </label>`;
-      }).join("");
+      }).join("") + (() => {
+        const opts = ["best", ...BALL_ORDER, "none"].map(b => `<option value="${b}" ${catchRules().shiny === b ? "selected" : ""}>${b === "best" ? "Best ball" : BALL_NAMES[b]}</option>`).join("");
+        return `<label title="Shinies are 2× easier to catch. 'Best ball' throws the best ball you own." class="flex sm:flex-col items-center justify-between gap-1 rounded-lg border px-2 py-1.5 border-yellow-400/70 bg-yellow-950/40 text-yellow-300">
+            <span class="text-[11px] font-bold">✨ Shiny (2× catch)</span>
+            <select onchange="setCatchRule('shiny', this.value)" class="bg-slate-950 border border-slate-700 rounded text-[11px] text-white px-1 py-0.5 focus:outline-none">${opts}</select>
+          </label>`;
+      })();
     }
 
     let lastOutOfBallsLog = 0;
@@ -2609,7 +2621,7 @@
       }
 
       state.balls[ball]--;
-      const chance = catchChance(currentEnemy.id, ball); // basiskans per zeldzaamheid × bal
+      const chance = catchChance(currentEnemy.id, ball, currentEnemy.isShiny); // basiskans per zeldzaamheid × bal (× 2 voor shinies)
       if (Math.random() <= chance) {
         const wasNew = !isRegistered(currentEnemy.id, currentEnemy.isShiny);
         const hereArea = getArea(state.currentAreaId);
@@ -3669,13 +3681,17 @@
       document.getElementById("dpsDisplay").textContent = getTeamDps().toLocaleString("en-US");
       document.getElementById("badgeBonusDisplay").textContent = `+${getBadgeBonusPct()}%`;
 
-      const shinyOddsText = state.shinyCharmTier === 1 ? "1 / 4,096" : state.shinyCharmTier === 2 ? "1 / 2,730" : state.shinyCharmTier >= 3 ? "1 / 1,365 ✨" : "1 / 8,192";
-      document.getElementById("shinyOddsDisplay").textContent = shinyOddsText;
+      // Shiny-kans bovenin: je gewone kans, plus de gehalveerde kans voor generaties met een volle Pokédex
+      const doneGens = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(isGenComplete);
+      document.getElementById("shinyOddsDisplay").innerHTML = `1 / ${baseShinyDenom().toLocaleString("en-US")}`
+        + (doneGens.length ? ` <span class="text-amber-300">• Gen ${doneGens.join(", ")}: 1 / ${(baseShinyDenom() / 2).toLocaleString("en-US")}</span>` : "");
+      document.getElementById("shinyOddsDisplay").parentElement.title = doneGens.length
+        ? `Shiny odds: 1 / ${baseShinyDenom()} — halved to 1 / ${baseShinyDenom() / 2} for Pokémon from Gen ${doneGens.join(", ")} (complete Pokédex)`
+        : "Shiny odds — complete a generation's Pokédex to halve them for that generation";
 
       document.getElementById("tonicTitleText").textContent = `💪 Power Tonic (Lv. ${state.powerTonicLvl})`;
       document.getElementById("tonicCostText").textContent = `₽ ${getTonicCost().toLocaleString("en-US")}`;
       Object.keys(SHOP_PRICES).forEach(b => { const el = document.getElementById(`price-${b}`); if (el) el.textContent = `₽ ${shopPrice(b).toLocaleString("en-US")}`; });
-      const mbh = document.getElementById("time-masterball"); if (mbh) mbh.textContent = saveTimeForPrice(shopPrice("masterball"));
       document.getElementById("amuletTitleText").textContent = `🪙 Amulet Coin (Lv. ${state.amuletLvl || 0})`;
       document.getElementById("amuletEffectText").textContent = `+${Math.round((goldMult() - 1) * 100)}% ₽ per kill → next: +${Math.round((goldMult() - 1 + BALANCE.amuletPerLevel) * 100)}%`;
       document.getElementById("amuletCostText").textContent = `₽ ${getAmuletCost().toLocaleString("en-US")}`;
@@ -3693,7 +3709,7 @@
         const nextCost = charmPrice(state.shinyCharmTier);
         const nextOdds = `1/${SHINY_ODDS_BY_TIER[nextTier]}`;
         document.getElementById("shinyCharmTitle").textContent = `✨ Shiny Charm Tier ${nextTier}`;
-        document.getElementById("shinyCharmCost").textContent = `₽ ${nextCost.toLocaleString("en-US")} (${nextOdds}) • ${saveTimeForPrice(nextCost)}`;
+        document.getElementById("shinyCharmCost").textContent = `₽ ${nextCost.toLocaleString("en-US")} (${nextOdds})`;
       }
 
       const locks = REGION_UNLOCK;
@@ -3718,14 +3734,21 @@
       const regionOwned = regionMajor.filter(g => state.badges.includes(g.badgeId)).length;
       document.getElementById("badgeRegionTitle").textContent = state.region.charAt(0).toUpperCase() + state.region.slice(1);
       document.getElementById("badgeRegionCount").textContent = `${regionOwned} / ${regionMajor.length}`;
-      document.getElementById("badgeContainer").innerHTML = regionMajor.map(g => {
+      // 8 gym-badges in 2 rijen van 4, daaronder in het midden (groter) de Champion-trofee
+      const badgeTile = (g, big) => {
         const owned = state.badges.includes(g.badgeId);
         const shortName = g.badgeName.replace(/^(Galar |Kalos |Alola |Paldea )/, "").replace(/ (Badge|Trophy)$/, "");
-        return `<div title="${g.badgeName} — ${g.name}${owned ? " ✔" : " (locked)"}" class="flex flex-col items-center min-w-0">
-            ${badgeSvg(g.badgeId, owned)}
-            <span class="text-[9px] leading-tight mt-0.5 text-center truncate w-full ${owned ? "text-yellow-200" : "text-slate-600"}">${shortName}</span>
+        const svg = big ? badgeSvg(g.badgeId, owned).replace('width="40" height="40" class="w-10 h-10"', 'width="60" height="60" class="w-[60px] h-[60px]"') : badgeSvg(g.badgeId, owned);
+        return `<div title="${g.badgeName} — ${g.name}${owned ? " ✔" : " (locked)"}" style="display:flex;flex-direction:column;align-items:center;min-width:0">
+            ${svg}
+            <span class="${big ? "text-[11px] font-bold" : "text-[9px]"} leading-tight mt-0.5 text-center truncate w-full ${owned ? "text-yellow-200" : "text-slate-600"}">${shortName}</span>
           </div>`;
-      }).join("");
+      };
+      const gymBadges = regionMajor.filter(g => g.type === "gym");
+      const champ = regionMajor.find(g => g.type === "league");
+      document.getElementById("badgeContainer").innerHTML =
+        `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:4px;row-gap:8px">${gymBadges.map(g => badgeTile(g, false)).join("")}</div>`
+        + (champ ? `<div style="display:flex;justify-content:center;margin-top:8px">${badgeTile(champ, true)}</div>` : "");
 
       updateBallButtons();
       renderCatchRules();
