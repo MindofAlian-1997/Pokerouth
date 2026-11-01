@@ -32,6 +32,18 @@
     .boss-glow {
       filter: drop-shadow(0 0 14px #ef4444) drop-shadow(0 0 28px #b91c1c);
     }
+    /* ---- Aan/uit-schakelaar ---- */
+    .toggle-switch { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .toggle-switch .track { position: relative; width: 38px; height: 22px; border-radius: 999px; background: #334155; border: 1px solid #475569; transition: background .2s, border-color .2s; flex-shrink: 0; }
+    .toggle-switch .knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,.5); transition: transform .2s, background .2s; }
+    .toggle-switch input:checked + .track { background: #059669; border-color: #34d399; }
+    .toggle-switch input:checked + .track .knob { transform: translateX(16px); background: #fff; }
+    .toggle-switch input:focus-visible + .track { outline: 2px solid #38bdf8; outline-offset: 2px; }
+    .toggle-switch .state-on, .toggle-switch input:checked ~ .label-text .state-off { display: none; }
+    .toggle-switch input:checked ~ .label-text .state-on { display: inline; color: #34d399; }
+    .toggle-switch .state-off { color: #94a3b8; }
+
     /* ---- Vieringen ---- */
     #celebrateLayer { position: fixed; inset: 0; pointer-events: none; z-index: 80; overflow: hidden; }
     .celebrate-card {
@@ -366,6 +378,11 @@
             </div>
             <p id="areaSubInfo" class="text-xs text-slate-400 mt-0.5">Defeat 10 Pokémon to unlock next area</p>
           </div>
+          <label title="Automatically move to the next area when you clear one. Gyms and dungeons are only tried when your team is strong enough. Turns itself off if you fail one. Never buys anything." class="toggle-switch text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700 shrink-0">
+            <input type="checkbox" id="autoProgressToggle" role="switch" onchange="toggleAutoProgress(this.checked)">
+            <span class="track"><span class="knob"></span></span>
+            <span class="label-text font-bold text-slate-200">⏩ Auto-Progress <span class="state-off">OFF</span><span class="state-on">ON</span></span>
+          </label>
         </div>
 
         <!-- Dungeon / Gym Multi-Wave Bar -->
@@ -1685,6 +1702,7 @@
       shinyCharmTier: 0,
       powerTonicLvl: 0,
       amuletLvl: 0,
+      autoProgress: false,
       playerId: "",
       leaderName: "",
       autoCatch: false,
@@ -1737,6 +1755,7 @@
       migrateRouteClears();
       migrateMoneyScale();
       updateSoundBtn();
+      const apt = document.getElementById("autoProgressToggle"); if (apt) apt.checked = !!state.autoProgress;
       if (!AREAS.some(a => a.id === state.currentAreaId)) {
         let last = 0;
         AREAS.forEach((a, i) => { if (!a.optional && isAreaUnlocked(i)) last = i; });
@@ -2344,6 +2363,54 @@
       return floor;
     }
 
+    // ===================== AUTO-PROGRESS (alleen verplaatsen, nooit kopen) =====================
+    const autoFailDps = {}; // DPS bij de laatste mislukte poging per gym/dungeon
+    function toggleAutoProgress(on) {
+      state.autoProgress = !!on;
+      addLog(on ? "⏩ Auto-Progress ON: you'll move on automatically (nothing is bought)." : "⏸️ Auto-Progress OFF.");
+      saveGame();
+      if (on) { goToHardestArea(); autoProgressCheck(); }
+    }
+    function areaDone(a) { return a.type === "route" ? routeDone(a) : !!state.clearedAreas[a.id]; }
+    function goToAreaAuto(area, msg) {
+      state.region = area.region;
+      enterArea(area.id);
+      renderAreaList();
+      if (msg) addLog(msg);
+    }
+    // Bij het aanzetten: meteen naar het moeilijkste gebied dat je open hebt (route, gym of dungeon), waar je ook bent
+    function goToHardestArea() {
+      const main = AREAS.filter(a => !a.optional);
+      const fi = main.findIndex(a => !areaDone(a));
+      const target = fi < 0 ? main.filter(a => a.type === "route").pop() : main[fi];
+      if (state.currentAreaId !== target.id) {
+        goToAreaAuto(target, target.type === "route"
+          ? `⏩ Auto-Progress: heading to your hardest unlocked route, ${target.name}.`
+          : `⏩ Auto-Progress: challenging ${target.name}!`);
+      }
+    }
+    function autoProgressCheck() {
+      if (!state.autoProgress || !state.starterChosen) return;
+      const main = AREAS.filter(a => !a.optional);
+      const fi = main.findIndex(a => !areaDone(a));
+      if (fi < 0) return;                                   // alles gehaald
+      const F = main[fi];
+      const prev = fi > 0 ? main[fi - 1] : null;
+      const grindRoute = main.slice(0, fi).filter(a => a.type === "route").pop() || main[0];
+      const cur = getArea(state.currentAreaId);
+      // alleen ingrijpen als je "vooraan" speelt; op een oude route laat het je met rust
+      const atFront = cur.id === F.id || (prev && cur.id === prev.id) || cur.id === grindRoute.id;
+      if (!atFront) return;
+      if (F.type === "route") {
+        if (cur.id !== F.id) goToAreaAuto(F, `⏩ Auto-Progress: on to ${F.name}.`);
+        return;
+      }
+      if (cur.id === F.id) return;                         // je bent al bezig in deze gym/dungeon
+      // Altijd proberen; lukt het niet, dan ga je 1 route terug en gaat Auto-Progress uit
+      goToAreaAuto(F, `⏩ Auto-Progress: challenging ${F.name}!`);
+    }
+    setInterval(autoProgressCheck, 2000);
+
     function enterArea(areaId) {
       const area = getArea(areaId);
       state.currentAreaId = area.id;
@@ -2440,6 +2507,7 @@
         if (state.routeKills[area.id] >= killsNeeded(area) && !state.clearedAreas[area.id]) {
           state.clearedAreas[area.id] = true;
           addLog(`✅ ${area.name} cleared! Next area unlocked.`);
+          setTimeout(autoProgressCheck, 300);
           renderAreaList();
         }
         spawnEnemy();
@@ -2469,6 +2537,7 @@
           dungeonTimeLeft = area.timer || 60;
           renderAreaList();
           spawnEnemy();
+          setTimeout(autoProgressCheck, 300);
         }
       }
       // Niet bij elke kill alles opnieuw tekenen/opslaan: bij hoge DPS gebeurt dat 10× per seconde
@@ -3649,8 +3718,20 @@
         document.getElementById("timerText").textContent = `${dungeonTimeLeft.toFixed(1)}s`;
         document.getElementById("timerBar").style.width = `${(dungeonTimeLeft / dungeonMaxTime) * 100}%`;
         if (dungeonTimeLeft <= 0) {
-          addLog(`⏰ Time ran out in ${area.name}! Restarted at Wave 1.`);
-          enterArea(state.currentAreaId);
+          if (state.autoProgress && !area.optional) {
+            autoFailDps[area.id] = getTeamDps();
+            const main = AREAS.filter(a => !a.optional);
+            const back = main.slice(0, main.indexOf(area)).filter(a => a.type === "route").pop();
+            // Niet gehaald: 1 route terug en Auto-Progress zet zichzelf uit
+            state.autoProgress = false;
+            const apt = document.getElementById("autoProgressToggle"); if (apt) apt.checked = false;
+            addLog(`⏰ Time ran out in ${area.name}! Back to ${back ? back.name : "the previous area"} — Auto-Progress turned OFF. Get stronger and switch it on again.`);
+            if (back) goToAreaAuto(back); else enterArea(state.currentAreaId);
+            saveGame();
+          } else {
+            addLog(`⏰ Time ran out in ${area.name}! Restarted at Wave 1.`);
+            enterArea(state.currentAreaId);
+          }
         }
       }
     }, 100);
