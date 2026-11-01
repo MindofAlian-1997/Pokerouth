@@ -3681,13 +3681,15 @@
       document.getElementById("dpsDisplay").textContent = getTeamDps().toLocaleString("en-US");
       document.getElementById("badgeBonusDisplay").textContent = `+${getBadgeBonusPct()}%`;
 
-      // Shiny-kans bovenin: je gewone kans, plus de gehalveerde kans voor generaties met een volle Pokédex
-      const doneGens = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(isGenComplete);
-      document.getElementById("shinyOddsDisplay").innerHTML = `1 / ${baseShinyDenom().toLocaleString("en-US")}`
-        + (doneGens.length ? ` <span class="text-amber-300">• Gen ${doneGens.join(", ")}: 1 / ${(baseShinyDenom() / 2).toLocaleString("en-US")}</span>` : "");
-      document.getElementById("shinyOddsDisplay").parentElement.title = doneGens.length
-        ? `Shiny odds: 1 / ${baseShinyDenom()} — halved to 1 / ${baseShinyDenom() / 2} for Pokémon from Gen ${doneGens.join(", ")} (complete Pokédex)`
-        : "Shiny odds — complete a generation's Pokédex to halve them for that generation";
+      // Shiny-kans bovenin: de kans in de regio waar je nu bent (gehalveerd als de Dex van die generatie compleet is)
+      const regionGen = ["kanto", "johto", "hoenn", "sinnoh", "unova", "kalos", "alola", "galar", "paldea"].indexOf(state.region) + 1;
+      const genDone = regionGen > 0 && isGenComplete(regionGen);
+      const oddsHere = baseShinyDenom() / (genDone ? 2 : 1);
+      document.getElementById("shinyOddsDisplay").innerHTML = `1 / ${oddsHere.toLocaleString("en-US")}`
+        + (genDone ? ` <span class="text-amber-300 text-[10px]">(Gen ${regionGen} Dex ✔)</span>` : "");
+      document.getElementById("shinyOddsDisplay").parentElement.title = genDone
+        ? `Shiny odds in ${capitalize(state.region)}: halved because your Gen ${regionGen} Pokédex is complete (normally 1 / ${baseShinyDenom()})`
+        : `Shiny odds in ${capitalize(state.region)} — complete the Gen ${regionGen} Pokédex to halve them here`;
 
       document.getElementById("tonicTitleText").textContent = `💪 Power Tonic (Lv. ${state.powerTonicLvl})`;
       document.getElementById("tonicCostText").textContent = `₽ ${getTonicCost().toLocaleString("en-US")}`;
