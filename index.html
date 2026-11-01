@@ -1364,7 +1364,8 @@
       // ---- Geld: nieuwere gebieden moeten altijd het meeste opleveren ----
       goldScale: 0.3,            // ₽ per kill = goldScale × (HP van de vijanden) ^ goldHpPower
       goldHpPower: 0.85,         // ≥ 0.8 nodig zodat de nieuwste route het meest per seconde oplevert
-      respawnSec: 0.5            // pauze tot de volgende wilde Pokémon op een route verschijnt
+      respawnSec: 0.5,           // pauze tot de volgende wilde Pokémon op een route verschijnt
+      routeKills: [10, 50]       // kills om een route te halen: Kanto Route 1 → eind Paldea (loopt geleidelijk op)
     };
 
     function levelMult(level) { return 1 + (level - 1) * 0.22; }
@@ -1428,6 +1429,7 @@
         const goldPerKill = goldForHp(routeHpHere);
 
         if (area.type === "route") {
+          area.killsNeeded = Math.round(lerp(BALANCE.routeKills, idx / Math.max(1, N - 1)));
           area.baseHp = Math.round(refDps * BALANCE.routeKillSec);
           area.reward = goldForHp(area.baseHp);
           area.reqDps = Math.round(refDps);
@@ -1679,6 +1681,7 @@
       badges: [],
       clearedAreas: {},
       routeKills: {},
+      routeReqVersion: 1, // oude saves hebben dit veld niet → bij het laden worden hun routes omgezet (daarna 2)
       visitedAreas: {},
       seen: {},
       soundOn: true,
@@ -1720,6 +1723,7 @@
       }
       migratePokedex();
       grantMissedLeagueRewards();
+      migrateRouteClears();
       updateSoundBtn();
       if (!AREAS.some(a => a.id === state.currentAreaId)) {
         let last = 0;
@@ -2043,6 +2047,7 @@
         const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
         state = { ...state, ...decoded };
         migratePokedex();
+        migrateRouteClears();
         saveGame();
         if (state.starterChosen) document.getElementById("starterModal").classList.add("hidden");
         enterArea(state.currentAreaId);
@@ -2280,20 +2285,30 @@
       let j = index - 1;
       while (j > 0 && AREAS[j].optional) j--;
       const prevArea = AREAS[j];
-      if (prevArea.type === "route") return (state.routeKills[prevArea.id] || 0) >= 10;
+      if (prevArea.type === "route") return routeDone(prevArea);
       return !!state.clearedAreas[prevArea.id];
+    }
+
+    // Een route is gehaald als je genoeg Pokémon hebt verslagen (of hem eerder al haalde)
+    function killsNeeded(area) { return area.killsNeeded || 10; }
+    function routeDone(area) { return !!state.clearedAreas[area.id] || (state.routeKills[area.id] || 0) >= killsNeeded(area); }
+    // Oude saves: routes die al met 10 kills gehaald waren, blijven gehaald
+    function migrateRouteClears() {
+      if (state.routeReqVersion >= 2) return;
+      for (const id in state.routeKills) if (state.routeKills[id] >= 10) state.clearedAreas[id] = true;
+      state.routeReqVersion = 2;
     }
 
     let progressFloorCache = { key: "", value: -1 };
     function getProgressFloor() {
       let done = 0;
-      for (const k in state.routeKills) if (state.routeKills[k] >= 10) done++;
+      for (const k in state.routeKills) if (routeDone(getArea(k))) done++;
       const key = done + "|" + Object.keys(state.clearedAreas).length;
       if (progressFloorCache.key === key) return progressFloorCache.value;
       let floor = -1;
       AREAS.forEach((a, i) => {
         if (a.optional) return;
-        const done = a.type === "route" ? (state.routeKills[a.id] || 0) >= 10 : !!state.clearedAreas[a.id];
+        const done = a.type === "route" ? routeDone(a) : !!state.clearedAreas[a.id];
         if (done) floor = i;
       });
       progressFloorCache = { key, value: floor };
@@ -2393,7 +2408,8 @@
 
       if (area.type === "route") {
         state.routeKills[area.id] = (state.routeKills[area.id] || 0) + 1;
-        if (state.routeKills[area.id] === 10) {
+        if (state.routeKills[area.id] >= killsNeeded(area) && !state.clearedAreas[area.id]) {
+          state.clearedAreas[area.id] = true;
           addLog(`✅ ${area.name} cleared! Next area unlocked.`);
           renderAreaList();
         }
@@ -2488,7 +2504,13 @@
       const chance = catchChance(currentEnemy.id, ball); // basiskans per zeldzaamheid × bal
       if (Math.random() <= chance) {
         const wasNew = !isRegistered(currentEnemy.id, currentEnemy.isShiny);
+        const hereArea = getArea(state.currentAreaId);
+        const wasComplete = areaCatchProgress(hereArea).complete;
         addPokemonToPlayer(currentEnemy.id, currentEnemy.level, currentEnemy.isShiny);
+        if (!wasComplete && areaCatchProgress(hereArea).complete) {
+          addLog(`🏆 <strong>${hereArea.name}</strong> complete! You caught every Pokémon found here.`);
+          setTimeout(() => { lastMiniToast = 0; miniToast(`🏆 ${hereArea.name} complete!`); }, 1600);
+        }
         if (currentEnemy.isShiny) celebrate("shiny", { id: currentEnemy.id, level: currentEnemy.level });
         else if (wasNew) miniToast(`🆕 New Pokédex entry: ${db.name}!`, spriteSrc(currentEnemy.id, false));
         addLog(`🎯 Gotcha! Caught ${currentEnemy.isShiny ? "✨ SHINY " : ""}${db.name} (Lv. ${currentEnemy.level})!`);
@@ -3039,12 +3061,12 @@
       if (area.type === "route") {
         typeBadge.textContent = "ROUTE";
         typeBadge.className = "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-600 text-white";
-        document.getElementById("areaSubInfo").textContent = "Defeat 10 Pokémon to unlock next area";
+        document.getElementById("areaSubInfo").textContent = `Defeat ${killsNeeded(area)} Pokémon to unlock the next area`;
         waveBox.classList.add("hidden");
         routeBox.classList.remove("hidden");
         const kills = state.routeKills[area.id] || 0;
-        document.getElementById("routeKillsText").textContent = `${kills} / 10`;
-        document.getElementById("routeProgressBar").style.width = `${Math.min(100, kills * 10)}%`;
+        document.getElementById("routeKillsText").textContent = routeDone(area) ? `✔ ${kills} / ${killsNeeded(area)}` : `${kills} / ${killsNeeded(area)}`;
+        document.getElementById("routeProgressBar").style.width = `${routeDone(area) ? 100 : Math.min(100, kills / killsNeeded(area) * 100)}%`;
       } else {
         typeBadge.textContent = area.type === "league" ? "CHAMPION LEAGUE" : area.type === "gym" ? `GYM • CAP LV. ${area.capLv}` : "DUNGEON";
         typeBadge.className = "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-600 text-white";
@@ -3085,7 +3107,7 @@
       const previewEl = document.getElementById("areaSpawnsPreview");
       if (area.encounters) {
         const order = { M: 0, L: 0, S: 1, R: 2, C: 3 };
-        previewEl.innerHTML = encounterTable(area)
+        previewEl.innerHTML = completionChip(area, false) + encounterTable(area)
           .sort((a, b) => order[rarityOf(a.id).key] - order[rarityOf(b.id).key] || b.chance - a.chance)
           .map(row => {
             const r = rarityOf(row.id);
@@ -3099,6 +3121,26 @@
       updateEnemyHpUI();
     }
 
+    // ---- Vangvoortgang per gebied: alle Pokémon die daar voorkomen (incl. boss) gevangen? ----
+    function areaSpecies(area) {
+      if (!area.encounters) return [];
+      const ids = encounterTable(area).map(r => r.id);
+      if (area.type === "dungeon") bossIds(area).forEach(id => ids.push(id));
+      return [...new Set(ids)];
+    }
+    function areaCatchProgress(area) {
+      const ids = areaSpecies(area);
+      const have = ids.filter(id => isRegistered(id, false)).length;
+      return { have, total: ids.length, complete: ids.length > 0 && have === ids.length };
+    }
+    function completionChip(area, small) {
+      const p = areaCatchProgress(area);
+      if (!p.total) return "";
+      return p.complete
+        ? `<span title="You caught every Pokémon found here!" class="${small ? "text-[9px]" : "text-[10px]"} font-extrabold px-1.5 py-0.5 rounded border border-amber-400/70 bg-amber-500/20 text-amber-300">🏆 Complete</span>`
+        : `<span title="Pokémon from this area you have caught" class="${small ? "text-[9px]" : "text-[10px]"} font-bold px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-400">📗 ${p.have}/${p.total}</span>`;
+    }
+
     function renderAreaList() {
       const container = document.getElementById("areaList");
       document.getElementById("regionTitle").textContent = state.region.toUpperCase();
@@ -3106,7 +3148,8 @@
         const globalIdx = AREAS.findIndex(a => a.id === area.id);
         const unlocked = isAreaUnlocked(globalIdx);
         const isCurrent = area.id === state.currentAreaId;
-        const cleared = area.type === "route" ? (state.routeKills[area.id] || 0) >= 10 : !!state.clearedAreas[area.id];
+        const cleared = area.type === "route" ? routeDone(area) : !!state.clearedAreas[area.id];
+        const prog = unlocked ? areaCatchProgress(area) : null;
 
         return `
           <button ${unlocked ? `onclick="enterArea('${area.id}')"` : "disabled"}
@@ -3122,7 +3165,13 @@
                 ${area.capLv ? `Level Cap: Lv. ${area.capLv} • ${area.badgeName}` : `Lv. ${area.minLv}-${area.maxLv}`}${area.optional ? ` • 🌙 Post-game: unlocks after beating the ${capitalize(getArea(area.unlockAfter).region)} League` : ""}
               </div>
             </div>
-            <div class="text-xs font-bold ${cleared ? "text-emerald-400" : "text-slate-500"}">${cleared ? "✔" : ""}</div>
+            <div class="flex flex-col items-end gap-1 shrink-0 ml-2">
+              ${prog && prog.complete
+                ? `<div title="Every Pokémon here caught!" class="text-sm font-black text-amber-400" style="text-shadow:0 0 6px #f59e0b">✔</div>`
+                : `<div class="text-xs font-bold ${cleared ? "text-emerald-400" : "text-slate-500"}">${cleared ? "✔" : ""}</div>`}
+              ${prog && prog.total && !prog.complete ? completionChip(area, true) : ""}
+              ${area.type === "route" && unlocked && !cleared ? `<span class="text-[9px] text-slate-500">${state.routeKills[area.id] || 0}/${killsNeeded(area)} defeated</span>` : ""}
+            </div>
           </button>
         `;
       }).join("");
