@@ -285,6 +285,10 @@
         <span class="text-[11px] font-bold text-slate-400 mr-1">Rarity:</span>
         <div id="pcRarityChips" class="flex flex-wrap gap-1.5"></div>
       </div>
+      <div class="flex flex-wrap items-center gap-1.5 mb-3 -mt-1.5">
+        <span class="text-[11px] font-bold text-slate-400 mr-1">Gen:</span>
+        <div id="pcGenChips" class="flex flex-wrap gap-1.5"></div>
+      </div>
       <div id="pcGrid" class="flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-2 pr-1 content-start"></div>
     </div>
   </div>
@@ -1393,10 +1397,11 @@
 
     function levelMult(level) { return 1 + (level - 1) * 0.22; }
     function tonicMultFor(lvl) { return Math.pow(BALANCE.tonicDpsMult, lvl); }
-    // Power Tonic: VASTE prijs per level. De lijst is gemeten uit volledige speelrondes, zodat elke
-    // generatie even zwaar blijft: per level ongeveer "killsPerTonic" kills op de route waar je dan bent.
+    // Power Tonic: VASTE prijs per level, een gladde curve (elk level 3–12% duurder dan het vorige).
+    // Moeite per level ≈ kills op je nieuwste route: Kanto 18→150, Johto 150→270, Hoenn–Alola 270→1600, Galar 1600→1900, Paldea 1900→4500.
+    // Afgestemd op ±50 uur speeltijd (Kanto ±2,5u, middenstuk ±5–6u per regio, Galar ±6u, Paldea ±11u).
     // Voorbij het eind van de lijst: ×1.09 per level.
-    const TONIC_PRICES = [90,91,92,93,120,130,210,240,240,250,250,250,250,260,260,260,290,740,1500,1600,1700,1700,1700,1800,2500,2600,2600,2600,2600,4400,4900,5400,5700,5900,6300,7100,7600,8100,8100,8700,9400,9700,9800,10000,11000,11000,12000,13000,13000,13000,13000,13000,14000,15000,15000,16000,17000,17000,19000,19000,21000,21000,21000,22000,23000,24000,24000,26000,27000,28000,29000,30000,30000,31000,32000,34000,35000,36000,36000,37000,42000,42000,43000,43000,45000,47000,47000,49000,50000,50000,51000,54000,57000,60000,66000,67000,70000,74000,75000,79000,83000,84000,89000,91000,99000,100000,100000,110000,110000,120000,120000,120000,130000,140000,150000,150000,160000,160000,170000,180000,180000,200000,200000,210000,220000,230000,240000,240000,250000,260000,260000,280000,290000,300000,340000,340000,350000,360000,360000,390000,400000,410000,440000,450000,470000,610000,650000,750000,830000,970000,1100000,1100000,1300000,1500000,1600000,1800000,2100000,2100000,2500000,2500000,3200000,3400000,3900000,3900000,4100000,4800000,5200000,5700000,6100000,7100000,7300000,8100000,8400000,9500000,10000000,11000000,11000000,12000000,14000000];
+    const TONIC_PRICES = [240,260,290,310,350,410,460,520,600,690,790,930,1100,1200,1400,1600,1800,2000,2200,2300,2500,2800,3100,3500,4100,4800,5700,6700,7900,9200,10000,11000,12000,13000,14000,15000,16000,18000,19000,21000,23000,24000,26000,28000,31000,32000,35000,37000,39000,41000,43000,45000,47000,49000,51000,53000,56000,59000,62000,65000,68000,71000,74000,77000,81000,84000,87000,90000,95000,99000,100000,110000,113300,120000,130000,133900,140000,150000,154500,160000,170000,180000,190000,200000,210000,220000,230000,240000,250000,260000,270000,280000,290000,310000,320000,330000,340000,350000,370000,380000,400000,410000,430000,450000,470000,490000,510000,530000,550000,560000,580000,600000,620000,640000,660000,670000,700000,720000,740000,760000,780000,810000,840000,870000,890000,920000,950000,980000,1000000,1030000,1100000,1133000,1166990,1200000,1236000,1300000,1400000,1442000,1500000,1600000,1700000,1751000,1800000,1900000,1957000,2000000,2100000,2163000,2200000,2266000,2300000,2400000,2500000,2600000,2678000,2800000,2900000,3000000,3200000,3400000,3700000,3900000,4100000,4400000,4700000,5000000,5300000,5600000,5900000,6200000,6600000,7000000,7300000,7700000,8100000,8400000,8800000,9100000,9500000,9900000,10000000,11000000,11330000,12000000,12360000,13000000,13390000,14000000,14420000,15000000,15450000,16000000,16480000,17000000,18000000,19000000,19570000,20000000,21000000,22000000];
     function tonicCostFor(lvl) {
       const last = TONIC_PRICES.length - 1;
       if (lvl <= last) return TONIC_PRICES[Math.max(0, lvl)];
@@ -2626,7 +2631,12 @@
         const wasNew = !isRegistered(currentEnemy.id, currentEnemy.isShiny);
         const hereArea = getArea(state.currentAreaId);
         const wasComplete = areaCatchProgress(hereArea).complete;
+        const wasShinyComplete = areaShinyComplete(hereArea);
         addPokemonToPlayer(currentEnemy.id, currentEnemy.level, currentEnemy.isShiny);
+        if (!wasShinyComplete && areaShinyComplete(hereArea)) {
+          addLog(`👑 <strong>${hereArea.name}</strong> shiny complete! Every Pokémon here caught as a shiny.`);
+          setTimeout(() => { lastMiniToast = 0; miniToast(`👑 ${hereArea.name}: all shinies caught!`); }, 1700);
+        }
         if (!wasComplete && areaCatchProgress(hereArea).complete) {
           addLog(`🏆 <strong>${hereArea.name}</strong> complete! You caught every Pokémon found here.`);
           setTimeout(() => { lastMiniToast = 0; miniToast(`🏆 ${hereArea.name} complete!`); }, 1600);
@@ -3269,9 +3279,17 @@
       const have = ids.filter(id => isRegistered(id, false)).length;
       return { have, total: ids.length, complete: ids.length > 0 && have === ids.length };
     }
+    // Alle Pokémon van een gebied ook als shiny gevangen?
+    function areaShinyComplete(area) {
+      const ids = areaSpecies(area);
+      return ids.length > 0 && ids.every(id => isRegistered(id, true));
+    }
     function completionChip(area, small) {
       const p = areaCatchProgress(area);
       if (!p.total) return "";
+      if (p.complete && areaShinyComplete(area)) {
+        return `<span title="You caught every Pokémon found here — also as a shiny!" class="${small ? "text-[9px]" : "text-[10px]"} font-extrabold px-1.5 py-0.5 rounded border border-yellow-300 bg-yellow-400/25 text-yellow-200">👑 Shiny Complete</span>`;
+      }
       return p.complete
         ? `<span title="You caught every Pokémon found here!" class="${small ? "text-[9px]" : "text-[10px]"} font-extrabold px-1.5 py-0.5 rounded border border-amber-400/70 bg-amber-500/20 text-amber-300">🏆 Complete</span>`
         : `<span title="Pokémon from this area you have caught" class="${small ? "text-[9px]" : "text-[10px]"} font-bold px-1.5 py-0.5 rounded border border-slate-700 bg-slate-900 text-slate-400">📗 ${p.have}/${p.total}</span>`;
@@ -3303,7 +3321,10 @@
             </div>
             <div class="flex flex-col items-end gap-1 shrink-0 ml-2">
               ${prog && prog.complete
-                ? `<div title="Every Pokémon here caught!" class="text-sm font-black text-amber-400" style="text-shadow:0 0 6px #f59e0b">✔</div>`
+                ? `<div class="flex flex-col items-center leading-none">
+                    ${areaShinyComplete(area) ? `<span title="Every Pokémon here caught as a shiny too!" style="font-size:13px;filter:drop-shadow(0 0 4px #fde047)">👑</span>` : ""}
+                    <div title="Every Pokémon here caught!" class="text-sm font-black text-amber-400" style="text-shadow:0 0 6px #f59e0b">✔</div>
+                  </div>`
                 : `<div class="text-xs font-bold ${cleared ? "text-emerald-400" : "text-slate-500"}">${cleared ? "✔" : ""}</div>`}
               ${prog && prog.total && !prog.complete ? completionChip(area, true) : ""}
               ${area.type === "route" && unlocked && !cleared ? `<span class="text-[9px] text-slate-500">${state.routeKills[area.id] || 0}/${killsNeeded(area)} defeated</span>` : ""}
@@ -3371,6 +3392,7 @@
     function pcPrefs() {
       const p = (state.pcPrefs ||= { sort: "dps", dir: -1, shinyOnly: false, favOnly: false });
       p.rarities ||= []; // leeg = alle zeldzaamheden
+      p.gens ||= [];     // leeg = alle generaties
       return p;
     }
     // Zeldzaamheidsfilter in de PC: meerdere tegelijk aan te zetten, "All" zet alles weer aan
@@ -3380,6 +3402,25 @@
       else if (r.includes(key)) r.splice(r.indexOf(key), 1);
       else r.push(key);
       renderPc(); saveGame();
+    }
+    // Generatiefilter in de PC (ook meerdere tegelijk)
+    function togglePcGen(g) {
+      const gens = pcPrefs().gens;
+      if (g === 0) gens.length = 0;
+      else if (gens.includes(g)) gens.splice(gens.indexOf(g), 1);
+      else gens.push(g);
+      renderPc(); saveGame();
+    }
+    function renderPcGenChips() {
+      const box = document.getElementById("pcGenChips");
+      if (!box) return;
+      const sel = pcPrefs().gens;
+      const counts = {};
+      state.pc.forEach(m => { const g = genOf(m.id); counts[g] = (counts[g] || 0) + 1; });
+      const chip = (g, label, n, active) => `<button onclick="togglePcGen(${g})"
+          class="px-2 py-1 rounded border text-[11px] font-bold transition ${active ? "border-sky-400 bg-sky-500/25 text-sky-200 ring-2 ring-white/70" : "border-slate-700 bg-slate-900 text-slate-500 hover:text-slate-300"}">${label} <span class="opacity-70">${n}</span></button>`;
+      box.innerHTML = chip(0, "All", state.pc.length, sel.length === 0)
+        + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => chip(g, `Gen ${g}`, counts[g] || 0, sel.includes(g))).join("");
     }
     function renderPcRarityChips() {
       const box = document.getElementById("pcRarityChips");
@@ -3513,6 +3554,7 @@
         .filter(m => !prefs.shinyOnly || m.isShiny)
         .filter(m => !prefs.favOnly || m.favorite)
         .filter(m => !prefs.rarities.length || prefs.rarities.includes(rarityOf(m.id).key))
+        .filter(m => !prefs.gens.length || prefs.gens.includes(genOf(m.id)))
         .filter(m => !q || POKEMON_DB[m.id].name.toLowerCase().includes(q))
         .sort((a, b) => ((key(a) - key(b)) * prefs.dir) || (a.id - b.id));
     }
@@ -3527,6 +3569,7 @@
     function renderPc() {
       if (!isPcOpen()) return;
       renderPcRarityChips();
+      renderPcGenChips();
       pcNeedsRefresh = false;
       const prefs = pcPrefs();
 
