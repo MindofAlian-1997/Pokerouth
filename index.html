@@ -472,21 +472,27 @@
           <h3 class="font-bold text-sm uppercase tracking-wider text-slate-300">🛒 PokéMart & Upgrades</h3>
           <span id="shinyOddsText" class="text-[11px] text-slate-400">Shiny Odds: 1 / 8,192</span>
         </div>
+        <div class="flex flex-wrap items-center gap-1.5 mb-2 text-xs">
+          <span class="text-[11px] font-bold text-slate-400 mr-1">Buy:</span>
+          <div id="buyQtyButtons" class="flex flex-wrap gap-1.5"></div>
+          <input id="buyQtyCustom" type="number" min="1" step="1" placeholder="amount" oninput="setBuyCustom(this.value)"
+            class="hidden w-24 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-sky-500" />
+        </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
           <button onclick="buyBall('pokeball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
-            <div class="font-bold text-red-400">+1 Poké Ball</div>
+            <div class="font-bold text-red-400"><span id="qtyLabel-pokeball">+1</span> Poké Ball</div>
             <div id="price-pokeball" class="text-yellow-400 font-semibold">₽ 50</div>
           </button>
           <button onclick="buyBall('greatball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
-            <div class="font-bold text-sky-400">+1 Great Ball</div>
+            <div class="font-bold text-sky-400"><span id="qtyLabel-greatball">+1</span> Great Ball</div>
             <div id="price-greatball" class="text-yellow-400 font-semibold">₽ 200</div>
           </button>
           <button onclick="buyBall('ultraball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
-            <div class="font-bold text-yellow-400">+1 Ultra Ball</div>
+            <div class="font-bold text-yellow-400"><span id="qtyLabel-ultraball">+1</span> Ultra Ball</div>
             <div id="price-ultraball" class="text-yellow-400 font-semibold">₽ 600</div>
           </button>
           <button onclick="buyBall('masterball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
-            <div class="font-bold text-purple-400">+1 Master Ball</div>
+            <div class="font-bold text-purple-400"><span id="qtyLabel-masterball">+1</span> Master Ball</div>
             <div id="price-masterball" class="text-yellow-400 font-semibold">₽ 75,000</div>
           </button>
           <button id="buyShinyCharmBtn" onclick="buyShinyCharm()" class="bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/60 rounded-lg p-2 text-center col-span-2">
@@ -1764,6 +1770,7 @@
       grantMissedLeagueRewards();
       migrateRouteClears();
       migrateMoneyScale();
+      renderBuyQty();
       if (!state.leaderName && storageGet("pri_leaderName")) state.leaderName = storageGet("pri_leaderName");
       if (!state.playerId && storageGet("pri_playerId")) state.playerId = storageGet("pri_playerId");
       updateSoundBtn();
@@ -2175,11 +2182,16 @@
     // voor een evolutietak die je nog mist (bijv. een tweede Eevee voor Jolteon).
     function isWorthCatching(id, isShiny) {
       if (!isRegistered(id, isShiny)) return true;
+      // Hoeveel exemplaren zijn er nodig om alles in deze evolutielijn te registreren? Een tak die pas
+      // later splitst (Cosmog → Cosmoem → Solgaleo/Lunala) telt ook mee.
       const owned = [...state.team, ...state.pc].filter(m => m.isShiny === isShiny);
-      const spareCopies = owned.filter(m => m.id === id).length;
-      const openBranches = (EVOS[id] || []).filter(([t]) =>
-        subtreeHasUnregistered(t, isShiny) && !owned.some(m => m.id !== id && inSubtree(m.id, t))).length;
-      return spareCopies < openBranches;
+      const useful = owned.filter(m => inSubtree(m.id, id) && copiesNeeded(m.id, isShiny) > 0).length;
+      return useful < copiesNeeded(id, isShiny);
+    }
+    function copiesNeeded(id, isShiny, depth = 0) {
+      const kids = depth < 6 ? (EVOS[id] || []) : [];
+      const sum = kids.reduce((s, [t]) => s + copiesNeeded(t, isShiny, depth + 1), 0);
+      return sum || (isRegistered(id, isShiny) ? 0 : 1);
     }
 
     function addPokemonToPlayer(id, level, isShiny) {
@@ -2727,12 +2739,43 @@
       return saveTimeText(kills);
     }
 
+    // ---- Aantal kopen: ×1, ×10, ×100, Max of een eigen aantal ----
+    const BUY_QTY_OPTIONS = ["1", "10", "100", "max", "custom"];
+    function buyQtyMode() { return BUY_QTY_OPTIONS.includes(state.buyQty) ? state.buyQty : "1"; }
+    function setBuyQty(mode) {
+      state.buyQty = mode;
+      const inp = document.getElementById("buyQtyCustom");
+      if (inp) { inp.classList.toggle("hidden", mode !== "custom"); if (mode === "custom") { inp.value = state.buyCustom || ""; inp.focus(); } }
+      renderBuyQty(); updateAllUI(); saveGame();
+    }
+    function setBuyCustom(v) { state.buyCustom = Math.max(0, Math.floor(+v || 0)); renderBuyQty(); updateAllUI(); }
+    // Hoeveel ballen van dit type koop je met de huidige keuze?
+    function buyAmount(type) {
+      const mode = buyQtyMode(), price = shopPrice(type);
+      if (mode === "max") return Math.floor(state.pokedollars / price);
+      if (mode === "custom") return Math.max(0, state.buyCustom || 0);
+      return +mode;
+    }
+    function renderBuyQty() {
+      const box = document.getElementById("buyQtyButtons");
+      if (!box) return;
+      const mode = buyQtyMode();
+      const label = { "1": "×1", "10": "×10", "100": "×100", max: "Max", custom: "Custom" };
+      box.innerHTML = BUY_QTY_OPTIONS.map(m => `<button onclick="setBuyQty('${m}')"
+          class="px-2.5 py-1 rounded font-bold ${m === mode ? "bg-sky-500 text-slate-950" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}">${label[m]}</button>`).join("");
+      const inp = document.getElementById("buyQtyCustom");
+      if (inp) inp.classList.toggle("hidden", mode !== "custom");
+    }
     function buyBall(type) {
-      const cost = shopPrice(type);
-      if (state.pokedollars < cost) { addLog("❌ Not enough PokéDollars!"); return; }
+      const n = buyAmount(type), price = shopPrice(type);
+      if (n <= 0) { addLog(buyQtyMode() === "custom" ? "❌ Enter an amount first!" : "❌ Not enough PokéDollars!"); return; }
+      const cost = n * price;
+      if (state.pokedollars < cost) { addLog(`❌ Not enough PokéDollars for ${n.toLocaleString("en-US")}× ${BALL_NAMES[type]}! (₽${cost.toLocaleString("en-US")})`); return; }
       state.pokedollars -= cost;
-      state.balls[type]++;
+      state.balls[type] += n;
+      if (n > 1) addLog(`🛒 Bought ${n.toLocaleString("en-US")}× ${BALL_NAMES[type]} for ₽${cost.toLocaleString("en-US")}.`);
       updateAllUI();
+      saveGame();
     }
 
     function buyShinyCharm() {
@@ -3756,7 +3799,11 @@
 
       document.getElementById("tonicTitleText").textContent = `💪 Power Tonic (Lv. ${state.powerTonicLvl})`;
       document.getElementById("tonicCostText").textContent = `₽ ${getTonicCost().toLocaleString("en-US")}`;
-      Object.keys(SHOP_PRICES).forEach(b => { const el = document.getElementById(`price-${b}`); if (el) el.textContent = `₽ ${shopPrice(b).toLocaleString("en-US")}`; });
+      Object.keys(SHOP_PRICES).forEach(b => {
+        const n = buyAmount(b), el = document.getElementById(`price-${b}`), lab = document.getElementById(`qtyLabel-${b}`);
+        if (lab) lab.textContent = `+${n.toLocaleString("en-US")}`;
+        if (el) el.textContent = n > 0 ? `₽ ${(n * shopPrice(b)).toLocaleString("en-US")}` : (buyQtyMode() === "max" ? "can't afford" : "—");
+      });
       document.getElementById("amuletTitleText").textContent = `🪙 Amulet Coin (Lv. ${state.amuletLvl || 0})`;
       document.getElementById("amuletEffectText").textContent = `+${Math.round((goldMult() - 1) * 100)}% ₽ per kill → next: +${Math.round((goldMult() - 1 + BALANCE.amuletPerLevel) * 100)}%`;
       document.getElementById("amuletCostText").textContent = `₽ ${getAmuletCost().toLocaleString("en-US")}`;
