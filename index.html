@@ -27,6 +27,9 @@
       animation: float 2.4s ease-in-out infinite;
     }
     .pk-link { cursor: pointer; }
+    #pcGrid [data-pcuid], #pcParty [data-partyuid] { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+    .pc-drag-ghost { position: fixed; z-index: 100; pointer-events: none; width: 64px; height: 64px; transform: translate(-50%, -60%) scale(1.15); filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
+    .pc-drop-target { outline: 2px solid #38bdf8; outline-offset: 2px; background: rgba(14,165,233,.15) !important; }
     .pk-link:hover { text-decoration: underline; text-underline-offset: 2px; }
     .shiny-glow {
       filter: drop-shadow(0 0 12px #facc15) drop-shadow(0 0 24px #eab308);
@@ -278,16 +281,18 @@
         <button onclick="setPcSort('dex')" id="pcSort-dex" class="px-2.5 py-1 rounded text-xs font-bold"># Dex</button>
         <button onclick="setPcSort('level')" id="pcSort-level" class="px-2.5 py-1 rounded text-xs font-bold">Lv. Level</button>
         <button onclick="setPcSort('newest')" id="pcSort-newest" class="px-2.5 py-1 rounded text-xs font-bold">🕒 Newest</button>
+        <select id="pcRaritySelect" onchange="setPcRaritySelect(this.value)" class="sm:hidden bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-sky-500"></select>
+        <select id="pcGenSelect" onchange="setPcGenSelect(this.value)" class="sm:hidden bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-sky-500"></select>
         <span class="w-px h-5 bg-slate-700 mx-1"></span>
         <button onclick="togglePcFilter('shinyOnly')" id="pcFilter-shinyOnly" class="px-2.5 py-1 rounded text-xs font-bold">✨ Shiny only</button>
         <button onclick="togglePcFilter('favOnly')" id="pcFilter-favOnly" class="px-2.5 py-1 rounded text-xs font-bold">★ Favorites only</button>
         <input type="text" id="pcSearchInput" oninput="renderPc()" placeholder="Search name..." class="ml-auto bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 w-36" />
       </div>
-      <div class="flex flex-wrap items-center gap-1.5 mb-3">
+      <div class="hidden sm:flex flex-wrap items-center gap-1.5 mb-3">
         <span class="text-[11px] font-bold text-slate-400 mr-1">Rarity:</span>
         <div id="pcRarityChips" class="flex flex-wrap gap-1.5"></div>
       </div>
-      <div class="flex flex-wrap items-center gap-1.5 mb-3 -mt-1.5">
+      <div class="hidden sm:flex flex-wrap items-center gap-1.5 mb-3 -mt-1.5">
         <span class="text-[11px] font-bold text-slate-400 mr-1">Gen:</span>
         <div id="pcGenChips" class="flex flex-wrap gap-1.5"></div>
       </div>
@@ -3521,7 +3526,14 @@
           class="px-2 py-1 rounded border text-[11px] font-bold transition ${active ? "border-sky-400 bg-sky-500/25 text-sky-200 ring-2 ring-white/70" : "border-slate-700 bg-slate-900 text-slate-500 hover:text-slate-300"}">${label} <span class="opacity-70">${n}</span></button>`;
       box.innerHTML = chip(0, "All", state.pc.length, sel.length === 0)
         + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => chip(g, `Gen ${g}`, counts[g] || 0, sel.includes(g))).join("");
+      // Telefoon: dezelfde filter als dropdown (één keuze)
+      const dd = document.getElementById("pcGenSelect");
+      if (dd) dd.innerHTML = `<option value="all" ${sel.length === 0 ? "selected" : ""}>All gens (${state.pc.length})</option>`
+        + (sel.length > 1 ? `<option selected disabled>${sel.length} gens</option>` : "")
+        + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => `<option value="${g}" ${sel.length === 1 && sel[0] === g ? "selected" : ""}>Gen ${g} (${counts[g] || 0})</option>`).join("");
     }
+    function setPcGenSelect(v) { pcPrefs().gens = v === "all" ? [] : [+v]; renderPc(); saveGame(); }
+    function setPcRaritySelect(v) { pcPrefs().rarities = v === "all" ? [] : [v]; renderPc(); saveGame(); }
     function renderPcRarityChips() {
       const box = document.getElementById("pcRarityChips");
       if (!box) return;
@@ -3532,6 +3544,10 @@
           class="px-2 py-1 rounded border text-[11px] font-bold transition ${active ? style + " ring-2 ring-white/70" : "border-slate-700 bg-slate-900 text-slate-500 hover:text-slate-300"}">${label} <span class="opacity-70">${n}</span></button>`;
       box.innerHTML = chip("all", "All", "border-slate-400 bg-slate-700 text-white", state.pc.length, sel.length === 0)
         + ["C", "R", "S", "L", "M"].map(k => chip(k, RARITY[k].icon + RARITY[k].name, RARITY[k].style, counts[k] || 0, sel.includes(k))).join("");
+      const dd = document.getElementById("pcRaritySelect");
+      if (dd) dd.innerHTML = `<option value="all" ${sel.length === 0 ? "selected" : ""}>All rarities (${state.pc.length})</option>`
+        + (sel.length > 1 ? `<option selected disabled>${sel.length} rarities</option>` : "")
+        + ["C", "R", "S", "L", "M"].map(k => `<option value="${k}" ${sel.length === 1 && sel[0] === k ? "selected" : ""}>${RARITY[k].icon}${RARITY[k].name} (${counts[k] || 0})</option>`).join("");
     }
     function isPcOpen() { return !document.getElementById("pcModal").classList.contains("hidden"); }
     function findMon(uid) {
@@ -3612,6 +3628,80 @@
     }
 
     function cancelPcSwap() { pcSwapUid = null; renderPc(); }
+
+    // ---- Slepen in de PC: van de box naar je team (muis én telefoon) ----
+    // Muis: begin te slepen na een paar pixels. Telefoon: houd een Pokémon even vast (lang drukken),
+    // zodat gewoon scrollen door de box blijft werken.
+    let pcDrag = null, pcSuppressClick = false;
+    function pcDropTargetAt(x, y) {
+      const el = document.elementFromPoint(x, y);
+      if (!el) return null;
+      const card = el.closest("[data-partyuid]");
+      if (card) return { el: card, uid: +card.dataset.partyuid };
+      const party = el.closest("#pcParty");
+      if (party) return { el: party, uid: null };
+      return null;
+    }
+    function pcStartDrag() {
+      const d = pcDrag;
+      d.active = true;
+      pcPointerInside = true; // niet opnieuw tekenen tijdens het slepen
+      const mon = state.pc.find(m => m.uid === d.uid);
+      if (!mon) { pcDrag = null; return; }
+      const g = document.createElement("img");
+      g.src = spriteUrl(mon); g.className = "pc-drag-ghost pixelated" + (mon.isShiny ? " shiny-glow" : "");
+      g.style.left = d.x + "px"; g.style.top = d.y + "px";
+      document.body.appendChild(g); d.ghost = g;
+      if (navigator.vibrate) try { navigator.vibrate(15); } catch (e) {}
+    }
+    function pcMarkTarget(t) {
+      document.querySelectorAll(".pc-drop-target").forEach(e => e.classList.remove("pc-drop-target"));
+      if (t) t.el.classList.add("pc-drop-target");
+    }
+    function pcEndDrag(x, y, cancelled) {
+      const d = pcDrag; pcDrag = null;
+      if (!d) return;
+      clearTimeout(d.timer);
+      if (!d.active) return;
+      pcSuppressClick = true; setTimeout(() => (pcSuppressClick = false), 0);
+      if (d.ghost) d.ghost.remove();
+      pcMarkTarget(null);
+      pcPointerInside = false;
+      const t = cancelled ? null : pcDropTargetAt(x, y);
+      if (t && t.uid) { pcSwapUid = d.uid; pcClickParty(t.uid); }          // op een partylid: wisselen
+      else if (t && state.team.length < 6) { pcSwapUid = null; pcClickMon(d.uid); } // op een lege plek: erbij
+      else renderPc();
+    }
+    document.addEventListener("pointerdown", e => {
+      const card = e.target.closest && e.target.closest("#pcGrid [data-pcuid]");
+      if (!card || e.target.closest("button, .pk-link") || (e.pointerType === "mouse" && e.button !== 0)) return;
+      pcDrag = { uid: +card.dataset.pcuid, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, active: false, touch: e.pointerType !== "mouse" };
+      if (pcDrag.touch) pcDrag.timer = setTimeout(() => { if (pcDrag && !pcDrag.active) pcStartDrag(); }, 280);
+    });
+    document.addEventListener("pointermove", e => {
+      const d = pcDrag; if (!d) return;
+      d.x = e.clientX; d.y = e.clientY;
+      const moved = Math.hypot(d.x - d.sx, d.y - d.sy);
+      if (!d.active) {
+        if (d.touch) { if (moved > 10) { clearTimeout(d.timer); pcDrag = null; } return; } // gewoon scrollen
+        if (moved > 6) pcStartDrag(); else return;
+      }
+      if (!pcDrag) return;
+      d.ghost.style.left = d.x + "px"; d.ghost.style.top = d.y + "px";
+      pcMarkTarget(pcDropTargetAt(d.x, d.y));
+    });
+    document.addEventListener("pointerup", e => pcEndDrag(e.clientX, e.clientY, false));
+    document.addEventListener("pointercancel", e => { if (pcDrag && pcDrag.active) return; pcEndDrag(0, 0, true); });
+    // Tijdens het slepen op een telefoon niet scrollen
+    document.addEventListener("touchmove", e => { if (pcDrag && pcDrag.active) e.preventDefault(); }, { passive: false });
+    document.addEventListener("touchend", e => {
+      if (pcDrag && pcDrag.active) { const t = e.changedTouches[0]; pcEndDrag(t.clientX, t.clientY, false); }
+    });
+    document.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest("#pcGrid [data-pcuid]")) e.preventDefault(); });
+    // Na het slepen niet ook nog een "klik" uitvoeren
+    document.addEventListener("click", e => {
+      if (pcSuppressClick && e.target.closest && e.target.closest("#pcModal")) { e.stopPropagation(); e.preventDefault(); pcSuppressClick = false; }
+    }, true);
 
     function afterPartyChange() {
       saveGame();
@@ -3695,7 +3785,7 @@
       const swapMon = pcSwapUid && state.pc.find(m => m.uid === pcSwapUid);
       if (swapMon) {
         banner.classList.remove("hidden");
-        banner.innerHTML = `<span>🔄 Party is full. Click a party member to swap with <strong>${POKEMON_DB[swapMon.id].name}</strong> (⚔️ ${getPokemonDps(swapMon).toLocaleString("en-US")}).</span>
+        banner.innerHTML = `<span>🔄 Party is full. Tap a party member (or drag onto one) to swap with <strong>${POKEMON_DB[swapMon.id].name}</strong> (⚔️ ${getPokemonDps(swapMon).toLocaleString("en-US")}).</span>
           <button onclick="cancelPcSwap()" class="text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-0.5 rounded">Cancel</button>`;
       } else {
         banner.classList.add("hidden");
@@ -3707,12 +3797,12 @@
         const dps = getPokemonDps(mon);
         const diff = swapMon ? getPokemonDps(swapMon) - dps : 0;
         return `
-          <div onclick="pcClickParty(${mon.uid})"
+          <div data-partyuid="${mon.uid}" onclick="pcClickParty(${mon.uid})"
             class="relative bg-slate-950 border ${swapMon ? "border-amber-400 ring-1 ring-amber-400 cursor-pointer hover:bg-amber-950/40" : mon.isShiny ? "border-yellow-500/60" : "border-slate-800"} rounded-lg p-1.5 flex flex-col items-center">
             <button onclick="toggleFavorite(${mon.uid}, event)" title="Favorite" class="absolute top-0.5 left-1 text-sm ${mon.favorite ? "text-amber-400" : "text-slate-600 hover:text-amber-300"}">${mon.favorite ? "★" : "☆"}</button>
             ${state.team.length > 1 && !swapMon ? `<button onclick="pcSendToBox(${mon.uid}, event)" title="Send to PC" class="absolute top-0.5 right-1 text-[10px] font-bold text-slate-400 hover:text-red-300">→PC</button>` : ""}
-            <img src="${spriteUrl(mon)}" class="w-12 h-12 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
-            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${pkLink(mon.id)}</span>
+            <img draggable="false" src="${spriteUrl(mon)}" class="w-12 h-12 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
+            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${POKEMON_DB[mon.id].name}</span>
             <span class="text-[10px] text-sky-400">Lv. ${mon.level}</span>
             <span class="text-[9px] font-mono text-emerald-400">⚔️ ${dps.toLocaleString("en-US")}</span>
             ${swapMon ? "" : evolveButton(mon, true)}
@@ -3734,12 +3824,12 @@
       grid.innerHTML = list.map(mon => {
         const selected = mon.uid === pcSwapUid;
         return `
-          <div onclick="pcClickMon(${mon.uid})" title="${state.team.length < 6 ? "Add to party" : "Swap into party"}"
+          <div data-pcuid="${mon.uid}" onclick="pcClickMon(${mon.uid})" title="${state.team.length < 6 ? "Add to party" : "Swap into party"}"
             class="relative cursor-pointer bg-slate-950 hover:bg-slate-800 border ${selected ? "border-amber-400 ring-2 ring-amber-400" : mon.isShiny ? "border-yellow-500/70" : "border-slate-800"} rounded-lg p-1.5 flex flex-col items-center">
             <button onclick="toggleFavorite(${mon.uid}, event)" title="Favorite" class="absolute top-0.5 left-1 text-sm ${mon.favorite ? "text-amber-400" : "text-slate-600 hover:text-amber-300"}">${mon.favorite ? "★" : "☆"}</button>
-            <span class="absolute top-0.5 right-1 text-[9px] font-mono text-slate-500">#${mon.id}</span>
-            <img loading="lazy" src="${spriteUrl(mon)}" class="w-12 h-12 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
-            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${pkLink(mon.id)}</span>
+            <span class="pk-link absolute top-0 right-0 px-1 py-0.5 text-[9px] font-mono text-sky-400/80 hover:text-sky-300" data-dex="${mon.id}" title="Open in Pokédex">📖#${mon.id}</span>
+            <img draggable="false" loading="lazy" src="${spriteUrl(mon)}" class="w-12 h-12 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
+            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${POKEMON_DB[mon.id].name}</span>
             <span class="text-[10px] text-sky-400">Lv. ${mon.level}</span>
             <span class="text-[9px] font-mono text-emerald-400">⚔️ ${getPokemonDps(mon).toLocaleString("en-US")}</span>
             ${prefs.sort === "potential" ? potentialLine(mon) : ""}
