@@ -2661,17 +2661,38 @@
     document.addEventListener("click", e => {
       if (openBallMenu && !(e.target.closest && e.target.closest(".ball-picker"))) { openBallMenu = null; renderCatchRules(); }
     });
-    function ballPicker(k, choices) {
+    // Het menu zelf staat los in <body> (position: fixed), zodat niets het kan afsnijden of bedekken
+    function renderBallMenu() {
+      let menu = document.getElementById("ballMenuPortal");
+      const btn = openBallMenu && document.querySelector(`[data-ballpicker="${openBallMenu}"]`);
+      if (!btn) { if (menu) menu.remove(); return; }
+      if (!menu) {
+        menu = document.createElement("div");
+        menu.id = "ballMenuPortal";
+        menu.className = "ball-picker";
+        menu.style.cssText = "position:fixed;z-index:1000;display:flex;flex-direction:column;gap:2px;padding:4px;background:#020617;border:1px solid #475569;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,.6)";
+        document.body.appendChild(menu);
+      }
+      const k = openBallMenu, cur = catchRules()[k];
+      const choices = k.startsWith("shiny") ? ["best", ...BALL_ORDER, "none"] : [...BALL_ORDER, "none"];
+      const label = b => (b === "best" ? "Best ball" : BALL_NAMES[b]);
+      menu.innerHTML = choices.map(b => `<button type="button" title="${label(b)}" aria-label="${label(b)}" onclick="pickBall('${k}', '${b}', event)"
+          style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:6px;${b === cur ? "background:rgba(2,132,199,.5);box-shadow:0 0 0 1px #38bdf8" : ""}">${ballIcon(b, "w-6 h-6")}</button>`).join("");
+      // onder de knop, of erboven als er onderaan geen plek is
+      const r = btn.getBoundingClientRect(), mh = choices.length * 38 + 10, mw = 46;
+      const below = r.bottom + 4 + mh <= window.innerHeight;
+      menu.style.top = (below ? r.bottom + 4 : Math.max(4, r.top - 4 - mh)) + "px";
+      menu.style.left = Math.min(window.innerWidth - mw - 4, Math.max(4, r.left + r.width / 2 - mw / 2)) + "px";
+    }
+    window.addEventListener("resize", () => { if (openBallMenu) { openBallMenu = null; renderBallMenu(); } });
+    window.addEventListener("scroll", () => { if (openBallMenu) renderBallMenu(); }, true);
+    function ballPicker(k) {
       const cur = catchRules()[k];
       const label = b => (b === "best" ? "Best ball" : BALL_NAMES[b]);
-      const menu = openBallMenu === k
-        ? `<div class="absolute z-40 left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-950 border border-slate-600 rounded-lg shadow-xl p-1 flex flex-col gap-0.5">
-            ${choices.map(b => `<button type="button" title="${label(b)}" aria-label="${label(b)}" onclick="pickBall('${k}', '${b}', event)" class="flex items-center justify-center w-8 h-8 rounded ${b === cur ? "bg-sky-600/50 ring-1 ring-sky-400" : "hover:bg-slate-800"}">${ballIcon(b, "w-6 h-6")}</button>`).join("")}
-          </div>` : "";
       return `<div class="ball-picker relative">
-          <button type="button" title="${label(cur)}" aria-label="${label(cur)}" onclick="toggleBallMenu('${k}', event)" class="flex items-center gap-1 bg-slate-950 border border-slate-700 hover:border-sky-500 rounded text-[11px] text-white pl-1 pr-1.5 py-0.5">
+          <button type="button" data-ballpicker="${k}" title="${label(cur)}" aria-label="${label(cur)}" onclick="toggleBallMenu('${k}', event)" class="flex items-center gap-1 bg-slate-950 border ${openBallMenu === k ? "border-sky-500" : "border-slate-700"} hover:border-sky-500 rounded text-[11px] text-white pl-1 pr-1.5 py-0.5">
             ${ballIcon(cur, "w-6 h-6")}<span class="text-slate-500">▾</span>
-          </button>${menu}
+          </button>
         </div>`;
     }
     function renderCatchRules() {
@@ -2681,14 +2702,15 @@
         const r = RARITY[k];
         return `<div class="flex sm:flex-col items-center justify-between gap-1 rounded-lg border px-2 py-1.5 ${r.style}">
             <span class="text-[11px] font-bold">${r.icon}${r.name}</span>
-            ${ballPicker(k, [...BALL_ORDER, "none"])}
+            ${ballPicker(k)}
           </div>`;
       }).join("") + [["shiny", "✨ Shiny Common–Super Rare"], ["shinyLeg", "✨ Shiny Legendary & Mythical"]].map(([k, label]) => {
         return `<div title="Shinies are 2× easier to catch. 'Best ball' throws the best ball you own." class="flex sm:flex-col items-center justify-between gap-1 rounded-lg border px-2 py-1.5 border-yellow-400/70 bg-yellow-950/40 text-yellow-300">
             <span class="text-[11px] font-bold text-center">${label}</span>
-            ${ballPicker(k, ["best", ...BALL_ORDER, "none"])}
+            ${ballPicker(k)}
           </div>`;
       }).join("");
+      renderBallMenu();
     }
 
     let lastOutOfBallsLog = 0;
