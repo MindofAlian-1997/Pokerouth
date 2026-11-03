@@ -465,10 +465,10 @@
           </div>
           <div id="catchRules" class="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 mb-2"></div>
           <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-slate-400 border-t border-slate-800 pt-2">
-            <span>🔴 Poké Ball <strong id="count-pokeball" class="text-white">10</strong></span>
-            <span>🔵 Great Ball <strong id="count-greatball" class="text-white">2</strong></span>
-            <span>🟡 Ultra Ball <strong id="count-ultraball" class="text-white">0</strong></span>
-            <span>🟣 Master Ball <strong id="count-masterball" class="text-white">0</strong></span>
+            <span class="inline-flex items-center gap-1" title="Poké Ball"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Poké Ball" class="w-6 h-6 pixelated" onerror="this.replaceWith('🔴')" /><strong id="count-pokeball" class="text-white text-xs">10</strong></span>
+            <span class="inline-flex items-center gap-1" title="Great Ball"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png" alt="Great Ball" class="w-6 h-6 pixelated" onerror="this.replaceWith('🔵')" /><strong id="count-greatball" class="text-white text-xs">2</strong></span>
+            <span class="inline-flex items-center gap-1" title="Ultra Ball"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png" alt="Ultra Ball" class="w-6 h-6 pixelated" onerror="this.replaceWith('🟡')" /><strong id="count-ultraball" class="text-white text-xs">0</strong></span>
+            <span class="inline-flex items-center gap-1" title="Master Ball"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png" alt="Master Ball" class="w-6 h-6 pixelated" onerror="this.replaceWith('🟣')" /><strong id="count-masterball" class="text-white text-xs">0</strong></span>
           </div>
         </div>
       </div>
@@ -487,19 +487,19 @@
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
           <button onclick="buyBall('pokeball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
-            <div class="font-bold text-red-400"><span id="qtyLabel-pokeball">+1</span> Poké Ball</div>
+            <div class="font-bold text-red-400"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="" class="inline w-5 h-5 pixelated -my-1" onerror="this.remove()" /> <span id="qtyLabel-pokeball">+1</span> Poké Ball</div>
             <div id="price-pokeball" class="text-yellow-400 font-semibold">₽ 50</div>
           </button>
           <button onclick="buyBall('greatball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
-            <div class="font-bold text-sky-400"><span id="qtyLabel-greatball">+1</span> Great Ball</div>
+            <div class="font-bold text-sky-400"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png" alt="" class="inline w-5 h-5 pixelated -my-1" onerror="this.remove()" /> <span id="qtyLabel-greatball">+1</span> Great Ball</div>
             <div id="price-greatball" class="text-yellow-400 font-semibold">₽ 200</div>
           </button>
           <button onclick="buyBall('ultraball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
-            <div class="font-bold text-yellow-400"><span id="qtyLabel-ultraball">+1</span> Ultra Ball</div>
+            <div class="font-bold text-yellow-400"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png" alt="" class="inline w-5 h-5 pixelated -my-1" onerror="this.remove()" /> <span id="qtyLabel-ultraball">+1</span> Ultra Ball</div>
             <div id="price-ultraball" class="text-yellow-400 font-semibold">₽ 600</div>
           </button>
           <button onclick="buyBall('masterball')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2 text-center">
-            <div class="font-bold text-purple-400"><span id="qtyLabel-masterball">+1</span> Master Ball</div>
+            <div class="font-bold text-purple-400"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png" alt="" class="inline w-5 h-5 pixelated -my-1" onerror="this.remove()" /> <span id="qtyLabel-masterball">+1</span> Master Ball</div>
             <div id="price-masterball" class="text-yellow-400 font-semibold">₽ 75,000</div>
           </button>
           <button id="buyShinyCharmBtn" onclick="buyShinyCharm()" class="bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/60 rounded-lg p-2 text-center col-span-2">
@@ -3883,7 +3883,39 @@
         default: return `<circle cx="12" cy="12" r="5" fill="${c}"/>`;
       }
     }
+    // Echte badges uit de PokeAPI/sprites-repo (gelinkt, net als de Pokémon-sprites). Alola heeft geen badges
+    // maar Z-Crystals; Champion Trophies hebben geen echte versie en blijven het eigen ontwerp.
+    const BADGE_ART = (() => {
+      const B = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/";
+      const I = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/";
+      const m = {};
+      const set = (ids, nums) => ids.forEach((id, i) => (m[id] = B + nums[i] + ".png"));
+      set(["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"], [1, 2, 3, 4, 5, 6, 7, 8]);
+      set(["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"], [9, 10, 11, 12, 13, 14, 15, 16]);
+      set(["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"], [17, 18, 19, 20, 21, 22, 23, 24]);
+      set(["coal", "forest", "cobble", "fen", "relic", "mine", "icicle", "beacon"], [25, 26, 27, 28, 29, 30, 31, 32]);
+      set(["trio", "basic", "insect", "bolt", "quake", "jet", "freeze", "legend"], [33, 34, 35, 36, 37, 38, 39, 40]);
+      set(["kalos_bug", "kalos_cliff", "kalos_rumble", "kalos_plant", "kalos_voltage", "kalos_fairy", "kalos_psychic", "kalos_iceberg"], [43, 44, 45, 46, 47, 48, 49, 50]);
+      set(["galar_grass", "galar_water", "galar_fire", "galar_fight", "galar_fairy", "galar_rock", "galar_dark", "galar_dragon"], [51, 52, 53, 54, 56, 57, 59, 60]);
+      set(["paldea_bug", "paldea_grass", "paldea_elec", "paldea_water", "paldea_normal", "paldea_ghost", "paldea_psychic", "paldea_ice"], [70, 71, 72, 73, 74, 75, 76, 77]);
+      const z = { alola_normal: "normalium", alola_fight: "fightinium", alola_water: "waterium", alola_fire: "firium", alola_rock: "rockium", alola_elec: "electrium", alola_ghost: "darkinium", alola_ground: "groundium" };
+      for (const id in z) m[id] = `${I}${z[id]}-z--bag.png`;
+      return m;
+    })();
+    function badgeFallback(badgeId, owned) {
+      const t = document.createElement("template");
+      t.innerHTML = badgeSvgDrawn(badgeId, owned).trim();
+      return t.content.firstChild;
+    }
     function badgeSvg(badgeId, owned) {
+      const url = BADGE_ART[badgeId];
+      if (!url) return badgeSvgDrawn(badgeId, owned);
+      const look = owned
+        ? "object-fit:contain;filter:drop-shadow(0 0 4px rgba(255,255,255,.35))"
+        : "object-fit:contain;filter:grayscale(1) brightness(.45);opacity:.55";
+      return `<img src="${url}" width="40" height="40" class="w-10 h-10" style="${look}" alt="" draggable="false" onerror="this.replaceWith(badgeFallback('${badgeId}', ${owned ? "true" : "false"}))" />`;
+    }
+    function badgeSvgDrawn(badgeId, owned) {
       const type = badgeId.endsWith("_champ") ? "trophy" : (BADGE_TYPE[badgeId] || "normal");
       const col = TYPE_COLOR[type];
       const gid = `bg_${badgeId}`;
