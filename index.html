@@ -2665,7 +2665,7 @@
       const cur = catchRules()[k];
       const label = b => (b === "best" ? "Best ball" : BALL_NAMES[b]);
       const menu = openBallMenu === k
-        ? `<div class="absolute z-40 left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-950 border border-slate-600 rounded-lg shadow-xl p-1 flex gap-0.5">
+        ? `<div class="absolute z-40 left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-950 border border-slate-600 rounded-lg shadow-xl p-1 flex flex-col gap-0.5">
             ${choices.map(b => `<button type="button" title="${label(b)}" aria-label="${label(b)}" onclick="pickBall('${k}', '${b}', event)" class="flex items-center justify-center w-8 h-8 rounded ${b === cur ? "bg-sky-600/50 ring-1 ring-sky-400" : "hover:bg-slate-800"}">${ballIcon(b, "w-6 h-6")}</button>`).join("")}
           </div>` : "";
       return `<div class="ball-picker relative">
