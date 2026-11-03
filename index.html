@@ -26,6 +26,8 @@
     .animate-float {
       animation: float 2.4s ease-in-out infinite;
     }
+    .pk-link { cursor: pointer; }
+    .pk-link:hover { text-decoration: underline; text-underline-offset: 2px; }
     .shiny-glow {
       filter: drop-shadow(0 0 12px #facc15) drop-shadow(0 0 24px #eab308);
     }
@@ -2003,7 +2005,7 @@
       state.starterChosen = true;
       addPokemonToPlayer(id, 5, false);
       document.getElementById("starterModal").classList.add("hidden");
-      addLog(`🎉 You chose ${POKEMON_DB[id].name} as your starter!`);
+      addLog(`🎉 You chose ${pkLink(id)} as your starter!`);
       enterArea("k_r1");
       saveGame();
       updateAllUI();
@@ -2285,7 +2287,7 @@
       mon.evoNotified = false;
       markSeen(toId);
       registerSpecies(toId, mon.isShiny);
-      addLog(`✨ What?! Your ${oldName} evolved into ${POKEMON_DB[toId].name}!`);
+      addLog(`✨ What?! Your ${oldName} evolved into ${pkLink(toId)}!`);
     }
     // Evoluties die deze Pokémon nu kan doen (level gehaald)
     function availableEvolutions(mon) { return evoOptions(mon.id).filter(o => mon.level >= o.level && evolutionRegionOk(o.to)); }
@@ -2522,9 +2524,9 @@
       markSeen(currentEnemy.id);
       // Alleen Super Rare en Legendary melden in de log (anders wordt het te druk)
       if (currentEnemy.canCatch && !currentEnemy.isBoss && ["S", "L", "M"].includes(rarityOf(currentEnemy.id).key)) {
-        addLog(`${currentEnemy.rarityLabel}: A wild <strong>${currentEnemy.name}</strong> appeared!`);
+        addLog(`${currentEnemy.rarityLabel}: A wild <strong>${pkLink(currentEnemy.id, currentEnemy.name)}</strong> appeared!`);
       }
-      if (currentEnemy.isShiny) addLog(`🌟 SHINY ALERT! A Shiny ${currentEnemy.name} appeared!`);
+      if (currentEnemy.isShiny) addLog(`🌟 SHINY ALERT! A Shiny ${pkLink(currentEnemy.id, currentEnemy.name)} appeared!`);
       renderArena();
       if (currentEnemy.isShiny) {
         playTune(TUNES.shinySpawn);
@@ -2685,10 +2687,10 @@
         }
         if (currentEnemy.isShiny) celebrate("shiny", { id: currentEnemy.id, level: currentEnemy.level });
         else if (wasNew) miniToast(`🆕 New Pokédex entry: ${db.name}!`, spriteSrc(currentEnemy.id, false));
-        addLog(`🎯 Gotcha! Caught ${currentEnemy.isShiny ? "✨ SHINY " : ""}${db.name} (Lv. ${currentEnemy.level})!`);
+        addLog(`🎯 Gotcha! Caught ${currentEnemy.isShiny ? "✨ SHINY " : ""}${pkLink(currentEnemy.id)} (Lv. ${currentEnemy.level})!`);
         cloudSyncNow(true);
       } else if (rare) {
-        addLog(`💨 ${currentEnemy.isShiny ? "✨ " : ""}${db.name} broke free from your ${BALL_NAMES[ball]}!`);
+        addLog(`💨 ${currentEnemy.isShiny ? "✨ " : ""}${pkLink(currentEnemy.id)} broke free from your ${BALL_NAMES[ball]}!`);
       }
       updateAllUI();
       saveGame();
@@ -2929,6 +2931,31 @@
       return !!((state.seen && state.seen[id]) || state.team.some(m => m.id === id) || state.pc.some(m => m.id === id));
     }
     function dexName(id) { return isSeen(id) ? POKEMON_DB[id].name : "???"; }
+    // Klikbare naam: opent de Pokédex-pagina van die Pokémon, maar alleen als je hem al bent tegengekomen
+    function pkLink(id, text = POKEMON_DB[id] ? POKEMON_DB[id].name : `#${id}`) {
+      return isSeen(id) ? `<span class="pk-link" data-dex="${id}" title="Open in Pokédex">${text}</span>` : text;
+    }
+    function openDexFor(id) {
+      if (!POKEMON_DB[id] || !isSeen(id)) return;
+      selectedDexId = id;
+      const modal = document.getElementById("pokedexModal");
+      modal.style.zIndex = 60; // boven de PC als je vanuit de PC klikt
+      currentDexGen = genOfId(id);
+      openPokedex();
+      setTimeout(() => {
+        const box = document.getElementById("dexDetail");
+        if (box) box.scrollIntoView({ block: "nearest" });
+        const cell = document.querySelector(`[data-dexcell="${id}"]`);
+        if (cell) cell.scrollIntoView({ block: "center" });
+      }, 30);
+    }
+    // Eén klik-handler voor alle namen (in de capture-fase, zodat de kaart eronder niet ook reageert)
+    document.addEventListener("click", e => {
+      const el = e.target.closest && e.target.closest(".pk-link");
+      if (!el) return;
+      e.stopPropagation(); e.preventDefault();
+      openDexFor(+el.dataset.dex);
+    }, true);
 
     function selectDexEntry(id) {
       selectedDexId = selectedDexId === id ? null : id;
@@ -3046,7 +3073,7 @@
         const hasNorm = isRegistered(id, false) && isSeen(id);
         const hasShiny = isRegistered(id, true) && isSeen(id);
         html.push(`
-          <div onclick="selectDexEntry(${id})" class="cursor-pointer hover:bg-slate-800 bg-slate-950 border ${selectedDexId === id ? 'border-sky-400 ring-1 ring-sky-400' : hasNorm || hasShiny ? 'border-yellow-500/50' : 'border-slate-800'} rounded-xl p-2 flex flex-col items-center justify-between">
+          <div data-dexcell="${id}" onclick="selectDexEntry(${id})" class="cursor-pointer hover:bg-slate-800 bg-slate-950 border ${selectedDexId === id ? 'border-sky-400 ring-1 ring-sky-400' : hasNorm || hasShiny ? 'border-yellow-500/50' : 'border-slate-800'} rounded-xl p-2 flex flex-col items-center justify-between">
             <span class="text-[10px] text-slate-500 font-mono">#${id}</span>
             <div class="flex gap-1 my-1">
               <img loading="lazy" src="${spriteSrc(id, false)}" class="w-12 h-12 pixelated ${hasNorm ? '' : 'brightness-0 opacity-20'}" />
@@ -3317,7 +3344,7 @@
         ? (isNew ? (currentEnemy.isShiny ? "✨ New Shiny!" : "🆕 New!") : worth ? "🧬 Needed for an evolution" : (currentEnemy.isShiny ? "✨ Shiny Owned" : "✔ Owned"))
         : "🔒 Trainer";
 
-      document.getElementById("enemyName").textContent = (currentEnemy.isShiny ? "✨ " : "") + currentEnemy.name;
+      document.getElementById("enemyName").innerHTML = (currentEnemy.isShiny ? "✨ " : "") + pkLink(currentEnemy.id, currentEnemy.name);
       document.getElementById("enemyLevel").textContent = `Lv. ${currentEnemy.level}`;
       const spriteEl = document.getElementById("enemySprite");
       spriteEl.src = spriteSrc(currentEnemy.id, currentEnemy.isShiny);
@@ -3331,7 +3358,7 @@
           .map(row => {
             const r = rarityOf(row.id);
             const hasN = isRegistered(row.id, false);
-            return `<span title="${r.name}" class="text-[10px] px-1.5 py-0.5 rounded border ${r.style}">${r.icon}${dexName(row.id)}${hasN ? " ✔" : ""}</span>`;
+            return `<span title="${r.name}" class="text-[10px] px-1.5 py-0.5 rounded border ${r.style}">${r.icon}${pkLink(row.id, dexName(row.id))}${hasN ? " ✔" : ""}</span>`;
           }).join("");
       } else {
         previewEl.innerHTML = "";
@@ -3425,7 +3452,7 @@
             <img src="${sprite}" class="w-11 h-11 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-white truncate">${mon.favorite ? '<span class="text-amber-400">★</span> ' : ""}${mon.isShiny ? "✨ " : ""}${db.name}</span>
+                <span class="text-xs font-bold text-white truncate">${mon.favorite ? '<span class="text-amber-400">★</span> ' : ""}${mon.isShiny ? "✨ " : ""}${pkLink(mon.id)}</span>
                 <span class="text-xs font-bold ${atCap ? "text-amber-400" : "text-sky-300"}">Lv. ${mon.level}</span>
               </div>
               <div class="flex items-center justify-between text-[10px] text-slate-400 mt-0.5">
@@ -3551,7 +3578,7 @@
         const [mon] = state.pc.splice(idx, 1);
         state.team.push(mon);
         pcSwapUid = null;
-        addLog(`⚡ ${POKEMON_DB[mon.id].name} joined your party!`);
+        addLog(`⚡ ${pkLink(mon.id)} joined your party!`);
         afterPartyChange();
       } else {
         pcSwapUid = pcSwapUid === uid ? null : uid;
@@ -3570,7 +3597,7 @@
       state.team[tIdx] = incoming;   // zelfde plek in de party
       state.pc.splice(pIdx, 1, outgoing);
       pcSwapUid = null;
-      addLog(`🔄 Swapped ${POKEMON_DB[outgoing.id].name} for ${POKEMON_DB[incoming.id].name}.`);
+      addLog(`🔄 Swapped ${pkLink(outgoing.id)} for ${pkLink(incoming.id)}.`);
       afterPartyChange();
     }
 
@@ -3685,7 +3712,7 @@
             <button onclick="toggleFavorite(${mon.uid}, event)" title="Favorite" class="absolute top-0.5 left-1 text-sm ${mon.favorite ? "text-amber-400" : "text-slate-600 hover:text-amber-300"}">${mon.favorite ? "★" : "☆"}</button>
             ${state.team.length > 1 && !swapMon ? `<button onclick="pcSendToBox(${mon.uid}, event)" title="Send to PC" class="absolute top-0.5 right-1 text-[10px] font-bold text-slate-400 hover:text-red-300">→PC</button>` : ""}
             <img src="${spriteUrl(mon)}" class="w-12 h-12 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
-            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${POKEMON_DB[mon.id].name}</span>
+            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${pkLink(mon.id)}</span>
             <span class="text-[10px] text-sky-400">Lv. ${mon.level}</span>
             <span class="text-[9px] font-mono text-emerald-400">⚔️ ${dps.toLocaleString("en-US")}</span>
             ${swapMon ? "" : evolveButton(mon, true)}
@@ -3712,7 +3739,7 @@
             <button onclick="toggleFavorite(${mon.uid}, event)" title="Favorite" class="absolute top-0.5 left-1 text-sm ${mon.favorite ? "text-amber-400" : "text-slate-600 hover:text-amber-300"}">${mon.favorite ? "★" : "☆"}</button>
             <span class="absolute top-0.5 right-1 text-[9px] font-mono text-slate-500">#${mon.id}</span>
             <img loading="lazy" src="${spriteUrl(mon)}" class="w-12 h-12 pixelated ${mon.isShiny ? "shiny-glow" : ""}" />
-            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${POKEMON_DB[mon.id].name}</span>
+            <span class="text-[10px] font-bold text-white truncate w-full text-center">${mon.isShiny ? "✨ " : ""}${pkLink(mon.id)}</span>
             <span class="text-[10px] text-sky-400">Lv. ${mon.level}</span>
             <span class="text-[9px] font-mono text-emerald-400">⚔️ ${getPokemonDps(mon).toLocaleString("en-US")}</span>
             ${prefs.sort === "potential" ? potentialLine(mon) : ""}
