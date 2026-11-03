@@ -456,7 +456,7 @@
             <span class="text-xs font-bold text-slate-300">🎯 Auto-Catch: which ball for which rarity?</span>
             <span class="text-[10px] text-slate-500">Out of a ball? The next cheaper one is used.</span>
           </div>
-          <div id="catchRules" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 mb-2"></div>
+          <div id="catchRules" class="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 mb-2"></div>
           <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-slate-400 border-t border-slate-800 pt-2">
             <span>🔴 Poké Ball <strong id="count-pokeball" class="text-white">10</strong></span>
             <span>🔵 Great Ball <strong id="count-greatball" class="text-white">2</strong></span>
@@ -2612,14 +2612,15 @@
     const BALL_NAMES = { pokeball: "Poké Ball", greatball: "Great Ball", ultraball: "Ultra Ball", masterball: "Master Ball", none: "Don't catch" };
     function catchRules() {
       const r = (state.catchRules ||= { C: "pokeball", R: "greatball", S: "ultraball", L: "ultraball", M: "ultraball" });
-      r.shiny ||= "best"; // shinies: standaard je beste bal
+      r.shiny ||= "best"; // shinies Common t/m Super Rare: standaard je beste bal
+      r.shinyLeg ||= "best"; // shiny Legendaries en Mythicals: eigen regel
       return r;
     }
     // De gekozen bal, of de eerstvolgende goedkopere die je nog hebt (nooit een duurdere)
     function ballFor(id, isShiny = false) {
       // Shiny? Eigen regel: "best" = je beste bal (Master → Ultra → Great → Poké), of een gekozen bal
       if (isShiny) {
-        const want = catchRules().shiny;
+        const want = catchRules()[["L", "M"].includes(rarityOf(id).key) ? "shinyLeg" : "shiny"];
         if (want === "none") return null;
         const top = want === "best" ? BALL_ORDER.length - 1 : BALL_ORDER.indexOf(want);
         for (let i = top; i >= 0; i--) if (state.balls[BALL_ORDER[i]] > 0) return BALL_ORDER[i];
@@ -2641,13 +2642,13 @@
             <span class="text-[11px] font-bold">${r.icon}${r.name}</span>
             <select onchange="setCatchRule('${k}', this.value)" class="bg-slate-950 border border-slate-700 rounded text-[11px] text-white px-1 py-0.5 focus:outline-none">${opts}</select>
           </label>`;
-      }).join("") + (() => {
-        const opts = ["best", ...BALL_ORDER, "none"].map(b => `<option value="${b}" ${catchRules().shiny === b ? "selected" : ""}>${b === "best" ? "Best ball" : BALL_NAMES[b]}</option>`).join("");
+      }).join("") + [["shiny", "✨ Shiny Common–Super Rare"], ["shinyLeg", "✨ Shiny Legendary & Mythical"]].map(([k, label]) => {
+        const opts = ["best", ...BALL_ORDER, "none"].map(b => `<option value="${b}" ${catchRules()[k] === b ? "selected" : ""}>${b === "best" ? "Best ball" : BALL_NAMES[b]}</option>`).join("");
         return `<label title="Shinies are 2× easier to catch. 'Best ball' throws the best ball you own." class="flex sm:flex-col items-center justify-between gap-1 rounded-lg border px-2 py-1.5 border-yellow-400/70 bg-yellow-950/40 text-yellow-300">
-            <span class="text-[11px] font-bold">✨ Shiny (2× catch)</span>
-            <select onchange="setCatchRule('shiny', this.value)" class="bg-slate-950 border border-slate-700 rounded text-[11px] text-white px-1 py-0.5 focus:outline-none">${opts}</select>
+            <span class="text-[11px] font-bold text-center">${label}</span>
+            <select onchange="setCatchRule('${k}', this.value)" class="bg-slate-950 border border-slate-700 rounded text-[11px] text-white px-1 py-0.5 focus:outline-none">${opts}</select>
           </label>`;
-      })();
+      }).join("");
     }
 
     let lastOutOfBallsLog = 0;
